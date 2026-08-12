@@ -110,6 +110,8 @@ def main():
     from sklearn.metrics import roc_auc_score
     from sklearn.decomposition import PCA
     from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
     from sklearn.model_selection import cross_val_score, GroupKFold
     from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
     from scipy.spatial.distance import squareform
@@ -211,23 +213,26 @@ def main():
     fig.tight_layout(); fig.savefig(f"{args.out}/step4_pca.png", dpi=130); plt.close(fig)
 
     gkf = GroupKFold(5)
-    def cvauc(F):
-        return cross_val_score(LogisticRegression(max_iter=500), F, Y,
-                               cv=gkf, groups=CID, scoring="roc_auc").mean()
+    def cvauc(est, F):
+        return cross_val_score(est, F, Y, cv=gkf, groups=CID, scoring="roc_auc").mean()
+    lr = LogisticRegression(max_iter=500)
+    # NOTE: PCA/standardization must be fit INSIDE each fold to stay leakage-free;
+    # a globally-fit PCA lets the basis see the validation city's distribution.
+    pca_pipe = make_pipeline(StandardScaler(), PCA(4), LogisticRegression(max_iter=500))
     sets = {
-        "all 13 |dB|": adB,
-        "PCA top-4": pca.transform(Zs)[:, :4],
-        "compact 4 (B04,B05,B12,B08)": adB[:, [BI[b] for b in ["B04","B05","B12","B08"]]],
-        "compact 3 (B04,B05,B12)": adB[:, [BI[b] for b in ["B04","B05","B12"]]],
-        "single |dB(B04)|": adB[:, [BI["B04"]]],
+        "all 13 |dB|": (lr, adB),
+        "PCA top-4 (per-fold, leakage-free)": (pca_pipe, adB),
+        "compact 4 (B04,B05,B12,B08)": (lr, adB[:, [BI[b] for b in ["B04","B05","B12","B08"]]]),
+        "compact 3 (B04,B05,B12)": (lr, adB[:, [BI[b] for b in ["B04","B05","B12"]]]),
+        "single |dB(B04)|": (lr, adB[:, [BI["B04"]]]),
     }
     md += ["\n## Step 4 -- Intrinsic dimensionality & leakage-free multivariate AUC\n",
            f"- PCA cumulative variance: PC1={ev[0]:.2f}, top-4={np.cumsum(ev)[3]:.2f}, "
            f"top-6={np.cumsum(ev)[5]:.2f}\n",
            "\n| feature set | grouped-CV AUC (group=city) |\n|---|---|\n"]
     res = {}
-    for name, F in sets.items():
-        res[name] = cvauc(F); md.append(f"| {name} | {res[name]:.3f} |\n")
+    for name, (est, F) in sets.items():
+        res[name] = cvauc(est, F); md.append(f"| {name} | {res[name]:.3f} |\n")
 
     fig, ax = plt.subplots(figsize=(7, 3.4))
     ax.barh(list(res.keys())[::-1], list(res.values())[::-1], color="#3a7ca5")

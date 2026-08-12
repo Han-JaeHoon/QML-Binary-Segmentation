@@ -60,10 +60,13 @@ keep in mind. AUC (rank-based) is unaffected by it.
 Single-band separability, measured as ROC-AUC (imbalance-robust) of the
 temporal difference.
 
-**Direction is meaningless; magnitude is the signal.** For every band
-`AUC(signed dB) ≈ 0.5`, while `AUC(|dB|)` reaches **0.79**. Urban change goes in
-both spectral directions depending on the city, but *"changed a lot"* is
-consistent. → **features must be `|dB|`, not signed `dB`.**
+**Direction has no univariate/linear relevance; magnitude is the signal.** For
+every band `AUC(signed dB) ≈ 0.5` and a *linear* multivariate probe on signed
+`dB` scores only 0.48 — but a *nonlinear* model recovers 0.79 from signed `dB`
+(it re-derives the magnitude). Crucially `[dB, |dB|]` does **not** beat `|dB|`
+alone (0.80 vs 0.82), so there is no extra directional/joint pattern beyond
+magnitude. → **feed `|dB|` explicitly** (spares the model from learning `abs`);
+signed `dB` is not information-free, just an inefficient encoding.
 
 ![B04 histogram](results/step1_B04_hist.png)
 
@@ -101,24 +104,53 @@ PCA on `|dB|`: PC1 alone explains **59 %**, top-4 reach 85 %. Multivariate AUC
 | compact 3 (B04,B05,B12) | 0.808 |
 | single `|dB(B04)|` | 0.795 |
 
-**Compressing 13 → 3–4 features loses essentially nothing.** The per-pixel
-spectral ceiling is ~0.82 — beating it requires **spatial context (4×4 patches)**,
-not more bands.
+**Compressing 13 → 3–4 features loses essentially nothing** (PCA-4 is fit
+inside each CV fold — leakage-free). The compact spectral-change ceiling is
+~0.82 and it **holds under a nonlinear model and after adding the absolute
+`[B_T1, B_T2]` state** (0.81–0.82) — so beating it needs **spatial context**,
+not more bands or nonlinearity.
+
+> **Metric caveat:** AUCs above use a class-balanced sample. At the true 2.29 %
+> prevalence, report **PR-AUC, F1 and Change-Accuracy** (the challenge metrics) —
+> ROC-AUC alone is optimistic under extreme imbalance.
+
+### Part 2 — domain shift, spatial context, hard negatives
+
+![patch sweep](results/part2_patch_sweep.png)
+
+- **Per-image median correction.** Per-city median `dB` varies enormously
+  (B8A spread ~1500 DN across cities), so raw `|dB|` partly encodes *city/season
+  identity*. Subtracting each image's median baseline
+  `dBᶜᵒʳʳ = (T2−T1) − median` lifts cross-city AUC **0.811 → 0.864**. Adopt it.
+- **Spatial sweep (mean-pool `|dB|`).** 1×1 **0.811** → 3×3 0.848 → 5×5 0.868 →
+  7×7 **0.878**, monotonic. Spatial context is a real, sizeable lever →
+  **a spatial model (QCNN / patch features) is justified.**
+- **Hard negatives.** Within the top-20 % `|dB|` ("changed a lot"), separating
+  *urban* from *natural* change using land-cover state
+  `[B_T1, B_T2, NDVI_T1/T2, NDBI_T1/T2]` gives AUC **0.60** — modest but > 0.5.
+  So the *state* (not the delta) of vegetation/built-up indices carries some of
+  the urban-vs-natural distinction; keep it, but it is not a silver bullet.
 
 ---
 
 ## Recommendation for the QML pipeline
 
-- **Input features:** per-band robust-normalized **`|dB|`** for a small set —
-  **`{B04, B05, B12}` (+`B08`)** or **PCA top-4** → 4-qubit angle encoding.
-- **Exclude** signed `dB` and spectral-index deltas (no / weak signal).
+- **Input features:** per-band robust-normalized, **median-corrected `|dBᶜᵒʳʳ|`**
+  for a small set — **`{B04, B05, B12}` (+`B08`)** or **PCA top-4** → **4-qubit
+  angle encoding** (`θ = π·|dB|`).
+- **Angle > amplitude encoding:** PC1 (59 % of variance) is essentially overall
+  change *magnitude*; amplitude encoding normalizes `‖x‖` away and would discard
+  it. If amplitude is tried, encode `‖x‖` on a separate qubit.
+- **Exclude** signed `dB` and spectral-index *deltas*; **keep** NDVI/NDBI *state*
+  (T1,T2) as optional context features for hard negatives.
 - **Drop** B01/B09/B10 (low relevance *and* redundant/isolated).
-- Give the parameter-matched classical baseline the **same** features.
-- The real accuracy gains live in **spatial patches**, not extra bands.
+- Parameter-matched classical baseline gets the **same** features.
+- Biggest remaining lever is **spatial patches**, not extra bands.
 
 ```
-raw T1/T2 → robust per-band norm ([0,1]) → |dB| → {B04,B05,B12(,B08)} / PCA-4
-          → 4×4 patch → PQC   vs   param-matched MLP
+raw T1/T2 → robust per-band norm → per-image median-corrected |dB|
+          → {B04,B05,B12(,B08)} / PCA-4   (+ optional NDVI/NDBI state)
+          → n×n patch → PQC   vs   param-matched MLP
 ```
 
 ---
