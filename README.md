@@ -127,9 +127,30 @@ not more bands or nonlinearity.
   **a spatial model (QCNN / patch features) is justified.**
 - **Hard negatives.** Within the top-20 % `|dB|` ("changed a lot"), separating
   *urban* from *natural* change using land-cover state
-  `[B_T1, B_T2, NDVI_T1/T2, NDBI_T1/T2]` gives AUC **0.60** — modest but > 0.5.
-  So the *state* (not the delta) of vegetation/built-up indices carries some of
-  the urban-vs-natural distinction; keep it, but it is not a silver bullet.
+  `[B_T1, B_T2, NDVI_T1/T2, NDBI_T1/T2]` gives AUC **0.59 under random CV but
+  only 0.53 under city-grouped (leave-region-out) CV** — i.e. essentially
+  chance across cities. **Pixel spectral state does not generalize as an
+  urban-vs-natural discriminator**; that distinction must come from spatial
+  *structure*, not spectrum. Hard-negative *sampling* still matters for training,
+  but don't expect spectral state features to solve it.
+
+### Part 3 — do median-correction and spatial context stack? (yes)
+
+![corrected sweep](results/part3_corrected_sweep.png)
+
+Mean-pool `|dB|`, grouped CV, raw vs median-corrected:
+
+| window | raw | median-corrected |
+|---|---|---|
+| 1×1 | 0.811 | 0.864 |
+| 3×3 | 0.848 | 0.884 |
+| 5×5 | 0.868 | 0.896 |
+| 7×7 | 0.877 | **0.902** |
+
+The two levers are **independent and additive**: median correction adds ~0.05 at
+every window, spatial context adds ~0.04 on top of correction. Combined they take
+a linear probe from 0.811 to **0.90**. This is the target the QML pipeline should
+aim at with a **median-corrected, spatially-aware** input.
 
 ---
 
