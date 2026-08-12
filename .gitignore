@@ -1,0 +1,18 @@
+# Dataset (large + CC-BY-NC-SA / Copernicus terms -- do not commit)
+OneraDataset/
+OneraDataset.zip
+*.tif
+
+# challenge brief (not ours to redistribute)
+*.pdf
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# os / cache
+.DS_Store
+*.npz
