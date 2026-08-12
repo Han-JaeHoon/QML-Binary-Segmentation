@@ -118,10 +118,12 @@ not more bands or nonlinearity.
 
 ![patch sweep](results/part2_patch_sweep.png)
 
-- **Per-image median correction.** Per-city median `dB` varies enormously
-  (B8A spread ~1500 DN across cities), so raw `|dB|` partly encodes *city/season
-  identity*. Subtracting each image's median baseline
-  `dBᶜᵒʳʳ = (T2−T1) − median` lifts cross-city AUC **0.811 → 0.864**. Adopt it.
+- **Per-image median correction** (*per-pair unsupervised radiometric centering*).
+  Per-city median `dB` varies enormously (B8A spread ~1500 DN across cities), so
+  raw `|dB|` partly encodes *city/season identity*. Subtracting each image's
+  median baseline `dBᶜᵒʳʳ = (T2−T1) − median` lifts cross-city AUC
+  **0.811 → 0.864**. It uses no labels and — since change is only 2.29 % — the
+  median reflects the no-change population, so it is robust. Adopt it.
 - **Spatial sweep (mean-pool `|dB|`).** 1×1 **0.811** → 3×3 0.848 → 5×5 0.868 →
   7×7 **0.878**, monotonic. Spatial context is a real, sizeable lever →
   **a spatial model (QCNN / patch features) is justified.**
@@ -147,10 +149,26 @@ Mean-pool `|dB|`, grouped CV, raw vs median-corrected:
 | 5×5 | 0.868 | 0.896 |
 | 7×7 | 0.877 | **0.902** |
 
-The two levers are **independent and additive**: median correction adds ~0.05 at
-every window, spatial context adds ~0.04 on top of correction. Combined they take
-a linear probe from 0.811 to **0.90**. This is the target the QML pipeline should
-aim at with a **median-corrected, spatially-aware** input.
+The two levers are **complementary** — the spatial gain survives *after* the
+global radiometric shift is removed, so it is genuine local structure, not an
+averaged-out illumination artifact. They are only **approximately additive**: the
+correction gain shrinks as the window grows (+0.053 at 1×1 → +0.025 at 7×7), but
+both remain beneficial when combined. A median-corrected 7×7 linear probe reaches
+**0.90**.
+
+Read this as a **classical spatial reference**, not a bar the QML must clear.
+Three distinct benchmarks matter:
+
+| benchmark | AUC | role |
+|---|---|---|
+| **M0** pixel baseline (median-corrected 1×1) | ~0.864 | quantum-baseline target |
+| **spatial reference** (median-corrected 7×7, linear) | ~0.902 | upper reference |
+| **parameter-matched classical** (same features, ≤ QML params) | TBD | **the real comparison** |
+
+The challenge's own rule compares the QML to a classical model on the *same
+features with no more trainable parameters*. So success is a small QML that beats
+its **parameter-matched** classical twin while approaching ~0.90 — not necessarily
+exceeding the unconstrained 7×7 reference.
 
 ---
 
@@ -162,8 +180,10 @@ aim at with a **median-corrected, spatially-aware** input.
 - **Angle > amplitude encoding:** PC1 (59 % of variance) is essentially overall
   change *magnitude*; amplitude encoding normalizes `‖x‖` away and would discard
   it. If amplitude is tried, encode `‖x‖` on a separate qubit.
-- **Exclude** signed `dB` and spectral-index *deltas*; **keep** NDVI/NDBI *state*
-  (T1,T2) as optional context features for hard negatives.
+- **Exclude** signed `dB` and spectral-index *deltas*. NDVI/NDBI *state* (T1,T2)
+  separated hard negatives weakly under random CV (0.59) but **failed to
+  generalize across cities (0.53)** → **not part of the primary input**; retained
+  only as an optional ablation.
 - **Drop** B01/B09/B10 (low relevance *and* redundant/isolated).
 - Parameter-matched classical baseline gets the **same** features.
 - Biggest remaining lever is **spatial patches**, not extra bands.
