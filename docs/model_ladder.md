@@ -129,6 +129,18 @@ separate re-uploading expressivity from the extra parameters.
 - Run **untied (74)** and **tied (38)** mixers: if tied-L2 ≳ L1 the gain is
   re-uploading expressivity, not parameters.
 
+> **Fixed-batch evidence (32 patches, PCA-4, lr=0.1, 300 steps, single seed):**
+> L=1 (38) → **0.471**, L=2 **tied** (38) → **0.504**, L=2 **untied** (74) → **0.189**.
+> At a *fixed* 38-parameter budget the extra cycle gives **no benefit** (slightly
+> worse — plausibly optimization interference from reusing one mixer twice).
+> The fitting gain therefore tracks **parameter count, not re-uploading depth**,
+> under this setup. Consequences: (a) M4's advantage must be reported as a
+> *capacity/parameter* result, **not** as "re-uploading works"; (b) the 74-param
+> M4 is **not** parameter-matched to the 37-param conv, so **M3 L=1 stays the sole
+> headline parameter-matched model**. Whether more parameters also help
+> *generalization* on held-out cities is still open — that is the trainer's job.
+> Reproduce: [`train/overfit_tied.py`](../train/overfit_tied.py).
+
 ---
 
 ## 5. Training protocol (all models)
