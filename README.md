@@ -196,6 +196,15 @@ raw T1/T2 → robust per-band norm → per-image median-corrected |dB|
 
 ---
 
+## Model design
+
+The QML model ladder (M0 pixel baseline → M1/M2/M3 all 38-param, isolating one
+factor each → M4 re-uploading), with parameter-matched classical twins, training
+and evaluation protocol, and the full ablation matrix, is specified in
+[`docs/model_ladder.md`](docs/model_ladder.md). The main model (M3, 9-to-9 Spatial
+ZZ Re-uploading VQC) is implemented in [`circuits/m3_spatial_zz.py`](circuits/m3_spatial_zz.py)
+with its diagram at [`results/m3_circuit.png`](results/m3_circuit.png).
+
 ## Reproduce
 
 ```bash
