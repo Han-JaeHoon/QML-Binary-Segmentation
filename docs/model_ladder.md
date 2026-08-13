@@ -10,8 +10,10 @@ interactions**.
 
 The ladder is built so that **M1, M2, M3 all have exactly 38 trainable
 parameters**. Each rung therefore isolates *one* design factor, and each has a
-**parameter-matched classical twin** as required by the challenge rule
-(same input features, same receptive field, no more trainable parameters).
+**parameter-constrained classical twin** satisfying the challenge rule
+`N_classical ≤ N_QML` (same input features, same receptive field). Only **M2/M3
+achieve near-exact matching** (38 vs 37); M1's twin is smaller (constrained, not
+matched) because M1 has no spatial receptive field.
 
 ---
 
@@ -43,7 +45,7 @@ image** — re-fitting would erase the magnitude signal.
 | **Angle encode** `E` | `RY(π·x_a) RZ(π·x_b)` per qubit, for a band pair `(a,b)` | no (data) |
 | **Change strength** `s` | `s = √((x_a² + x_b²)/2) ∈ [0,1]` per qubit | no (data) |
 | **Spatial ZZ** (M3/M4) | `R_ZZ(γ · sᵢ sⱼ)` on 12 NN edges, `γ = π/2` **fixed** | no (data) |
-| **Spatial CNOT** (M2) | `CNOT` on 12 NN edges (fixed, data-independent) | no |
+| **Spatial CNOT** (M2) | `CNOT` on 12 NN edges, **fixed order: H-sublayer then V-sublayer, control = lower index** | no |
 | **Mixer** `V` | `RY(θ) RX(θ)` per qubit (non-commuting with Z) | **2 / qubit** |
 | **Readout** | `zᵢ = ⟨Zᵢ⟩` → `pᵢ = σ(a·zᵢ + b)`, `a,b` shared across pixels | **2** |
 
@@ -98,14 +100,20 @@ separate re-uploading expressivity from the extra parameters.
 
 ### M1 — Angle-only 9-to-9 VQC (spatial representation, no mixing)
 - **Circuit** `E1 → V1 → E2 → V2` on 9 qubits, **no entangler**.
-- Qubits are independent ⇒ this is 9 per-pixel VQCs sharing mixer weights and a
-  joint readout. **No information crosses between pixels.**
+- Qubits are independent ⇒ this is **9 independent position-wise VQCs** (mixer
+  params are *per-position*, hence 36, not shared) feeding a **shared scalar
+  calibration** `σ(a·zᵢ+b)`. **No information crosses between pixels.**
 - **Purpose** baseline that has the 9-qubit representation but *not* spatial
   interaction. `M1 → M2` measures whether spatial entanglement helps at all.
 
 ### M2 — CNOT Spatial VQC (fixed entanglement)
 - **Circuit** `E1 → CNOT_NN → V1 → E2 → CNOT_NN → V2`.
 - Spatial entanglement is **data-independent** (same CNOT pattern for every patch).
+- **Fixed edge order (must be documented):** CNOTs do **not** commute, so the order
+  is pinned — two sublayers, all 6 **horizontal** edges first then all 6
+  **vertical**, control = lower-index pixel → target = higher-index. (M3's `R_ZZ`
+  gates commute pairwise, so M3 is order-independent; only M2 needs this.) A wrong
+  or unstated order would make M2↔M3 an unfair comparison.
 - **Purpose** `M2 → M3` isolates the value of making the spatial interaction
   **depend on the data** (co-change strength) versus a fixed coupling.
 
@@ -130,9 +138,13 @@ separate re-uploading expressivity from the extra parameters.
   (b) *hard* negatives — high-`|ΔBᶜᵒʳʳ|` but label 0 (changed-a-lot-but-not-urban),
   (c) ordinary no-change. Hard-negative *features* don't generalize across cities,
   but hard-negative *sampling* still shapes the decision boundary.
-- **Loss.** Weighted BCE over the 9 patch pixels,
-  `L = (1/9) Σ WBCE(yᵢ, pᵢ)`, positive class up-weighted by inverse frequency;
-  compare **focal loss** as ablation.
+- **Loss — don't double-count imbalance.** Sampling already enriches positives,
+  so applying a raw `w₊ ≈ 97.7/2.29 ≈ 43` on top over-corrects. Pick ONE regime:
+  **(a)** controlled sampler (fixed ratio, e.g. positive : hard-neg : ordinary =
+  1:1:2) + mild/unweighted BCE, or **(b)** natural-ish sampling +
+  inverse-frequency weighted BCE. If weighting, compute `w₊` from the **actual
+  sampled** positive fraction, not from 2.29 %. `L = (1/9) Σ BCE(yᵢ,pᵢ)`; compare
+  **focal loss** as an ablation.
 - **Optimizer.** Adam + parameter-shift gradients (9 qubits, simulator).
 - **Validation.** **City-grouped / leave-region-out** only (never random pixel
   split — EDA showed random CV is optimistic: hard-neg 0.59→0.53). All fitted
@@ -154,7 +166,8 @@ ROC-AUC retained only for EDA/representation comparison.
 | spatial interaction | M1 (none) → M2 (CNOT) → M3 (ZZ) | value & type of entanglement |
 | coupling strength | `γ ∈ {0.5, 1, π/2}` (M3) | ZZ feature-map scale |
 | depth / re-uploading | M3 (L=1) → M4 tied (L=2) → M4 untied (L=2) | re-uploading vs params |
-| mixer sharing | independent (38) vs shared (6) | translation-symmetry price |
+| connectivity | 4-neighbour (main) vs 8-neighbour, L=1 | locality range |
+| mixer sharing | independent (38) → center/edge/corner (3 groups) → shared (6) | translation-symmetry price |
 | features | `{B04,B05,B12,B08}` vs `PCA-4` | physical vs data-driven |
 | correction | raw `|ΔB|` vs median-corrected | domain-shift removal |
 | loss | weighted-BCE vs focal | imbalance handling |
@@ -165,8 +178,13 @@ ROC-AUC retained only for EDA/representation comparison.
 - **M1 vs M2** → does spatial *entanglement* help beyond a joint readout?
 - **M2 vs M3** → does *data-dependent* coupling beat fixed coupling? (the core claim)
 - **M3 vs M4** → does re-uploading add expressivity at fixed parameters?
-- **M3 (38) vs 3×3 conv (37)** → the headline **parameter-matched** QML-vs-classical
-  result the challenge asks for.
+- **M3 (38) vs 3×3 conv (37)** → the headline QML-vs-classical result the challenge
+  asks for. **Caution:** report it as *"same input, same receptive field, nearly
+  identical trainable-parameter budget"* — **not** *"identical except quantumness"*.
+  The budgets match, but the inductive biases differ: M3's independent mixer is
+  **position-dependent** (θ per pixel) while the conv kernel is **weight-shared**
+  across positions. The `center/edge/corner` and `shared-6` mixer ablations probe
+  exactly this weight-sharing axis.
 
 > Disclosure: model design was developed with an AI assistant; all parameter
 > counts and circuit structure are reproduced by `circuits/m3_spatial_zz.py`, and
