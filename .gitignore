@@ -16,3 +16,6 @@ venv/
 # os / cache
 .DS_Store
 *.npz
+
+# training run artifacts (logs kept, weights are large/regenerable)
+results/runs/*_best.npy
