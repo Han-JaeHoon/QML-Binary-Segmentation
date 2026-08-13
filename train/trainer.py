@@ -158,7 +158,14 @@ def run(cfg, data_dir):
                                       select_threshold=True) if allp else {}
         return per_city, pooled
 
+    # Two checkpoints, on purpose:
+    #  *_bestcheap.npy : best POOLED cheap-val AP (covers ALL val cities every
+    #                    epoch) — the unbiased selector for cross-model comparisons
+    #  *_best.npy      : best exhaustive AP (only over `ex_cities`; with
+    #                    exhaustive_cities='smallest' this sees ONE city, so it is
+    #                    a biased selector — do not use it to compare models)
     best = {"exhaustive_AP": -1.0, "epoch": -1}
+    best_cheap = {"cheap_AP": -1.0, "epoch": -1}
     t0 = time.time()
     with open(log_path, "w") as f:
         f.write(json.dumps({"config": asdict(cfg), "n_params": spec.n_params,
@@ -179,6 +186,9 @@ def run(cfg, data_dir):
                    "grad_norm": float(np.linalg.norm(g)),
                    "param_norm": float(np.linalg.norm(np.asarray(params))),
                    "lr": cfg.lr, "wall_time": time.time() - t0}
+            if cv["AP"] > best_cheap["cheap_AP"]:
+                best_cheap = {"cheap_AP": cv["AP"], "epoch": epoch, "F1": cv["F1"]}
+                np.save(os.path.join(cfg.out_dir, f"{tag}_bestcheap.npy"), np.asarray(params))
             print(f"ep {epoch:3d}  BCE {rec['train_BCE']:.4f}  cheapAP {cv['AP']:.4f}  "
                   f"F1 {cv['F1']:.4f}  |g| {rec['grad_norm']:.3e}  {rec['wall_time']:.0f}s",
                   flush=True)
@@ -197,9 +207,9 @@ def run(cfg, data_dir):
                     np.save(os.path.join(cfg.out_dir, f"{tag}_best.npy"), np.asarray(params))
             f.write(json.dumps(rec) + "\n"); f.flush()
 
-        f.write(json.dumps({"best": best}) + "\n")
-    print(f"\nbest (exhaustive AP): {best}")
-    return best
+        f.write(json.dumps({"best_exhaustive": best, "best_cheap": best_cheap}) + "\n")
+    print(f"\nbest exhaustive AP: {best}\nbest cheap AP    : {best_cheap}")
+    return {"exhaustive": best, "cheap": best_cheap}
 
 
 if __name__ == "__main__":
