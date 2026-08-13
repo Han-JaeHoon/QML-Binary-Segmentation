@@ -21,7 +21,8 @@ def get_dev_split():
     return train, val
 
 def get_grouped_folds(n_splits=5, seed=0):
-    """Deterministic leave-region-out folds over the 14 train cities.
+    """Deterministic n-fold *city-grouped* CV over the 14 train cities (NOT
+    leave-one-region-out; true LORO would be 14 folds of 1 held-out city each).
     Returns [(train_cities, val_cities), ...]; every city is a val city once."""
     rng = np.random.RandomState(seed)
     order = list(TRAIN_CITIES)
