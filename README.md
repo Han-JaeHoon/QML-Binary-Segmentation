@@ -175,8 +175,12 @@ exceeding the unconstrained 7×7 reference.
 ## Recommendation for the QML pipeline
 
 - **Input features:** per-band robust-normalized, **median-corrected `|dBᶜᵒʳʳ|`**
-  for a small set — **`{B04, B05, B12}` (+`B08`)** or **PCA top-4** → **4-qubit
-  angle encoding** (`θ = π·|dB|`).
+  from the common 13-band base, reduced to 4 → **4-qubit angle encoding**. A
+  follow-up 5-fold city-grouped check settled the representation:
+  **PCA-4 = 0.865 ≈ All-13 0.864 > Physical-4 {B04,B05,B12,B08} 0.855** →
+  **default main = PCA-4** (signed, `θ=π·u`), Physical-4 (`θ=π·|dB|`) kept as the
+  interpretability branch; final call deferred to the spatial VQC. Full data
+  pipeline in [`docs/data_pipeline.md`](docs/data_pipeline.md).
 - **Angle > amplitude encoding:** PC1 (59 % of variance) is essentially overall
   change *magnitude*; amplitude encoding normalizes `‖x‖` away and would discard
   it. If amplitude is tried, encode `‖x‖` on a separate qubit.
@@ -196,14 +200,19 @@ raw T1/T2 → robust per-band norm → per-image median-corrected |dB|
 
 ---
 
-## Model design
+## Model & data-pipeline design
 
-The QML model ladder (M0 pixel baseline → M1/M2/M3 all 38-param, isolating one
-factor each → M4 re-uploading), with parameter-matched classical twins, training
-and evaluation protocol, and the full ablation matrix, is specified in
-[`docs/model_ladder.md`](docs/model_ladder.md). The main model (M3, 9-to-9 Spatial
-ZZ Re-uploading VQC) is implemented in [`circuits/m3_spatial_zz.py`](circuits/m3_spatial_zz.py)
-with its diagram at [`results/m3_circuit.png`](results/m3_circuit.png).
+- **Data pipeline** ([`docs/data_pipeline.md`](docs/data_pipeline.md)): 13-band
+  base → Physical-4/PCA-4 branches, representation-independent center pools,
+  city-balanced 1:1:2 sampler, `π_pixel = 21.8 %` → plain-BCE decision.
+  Implemented in [`data/`](data) (`splits`, `preprocess`, `pools`, `sampler`),
+  each with a passing smoke test.
+- **Model ladder** ([`docs/model_ladder.md`](docs/model_ladder.md)): M0 pixel
+  baseline → M1/M2/M3 all 38-param (one factor each) → M4 re-uploading, with
+  parameter-matched classical twins and the ablation matrix. Main model M3 (9-to-9
+  Spatial ZZ Re-uploading VQC) is in
+  [`circuits/m3_spatial_zz.py`](circuits/m3_spatial_zz.py); diagram
+  [`results/m3_circuit.png`](results/m3_circuit.png).
 
 ## Reproduce
 
