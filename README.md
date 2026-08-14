@@ -207,6 +207,12 @@ raw T1/T2 → robust per-band norm → per-image median-corrected |dB|
   city-balanced 1:1:2 sampler, `π_pixel = 21.8 %` → plain-BCE decision.
   Implemented in [`data/`](data) (`splits`, `preprocess`, `pools`, `sampler`),
   each with a passing smoke test.
+- **Results so far** ([`docs/results_capacity_sweep.md`](docs/results_capacity_sweep.md)):
+  M3 capacity sweep 38 → 74 → 110 params. Capacity is a binding constraint at 38
+  (micro F1\* 0.189 → 0.302 from L1 to L2) but **saturates beyond ≈74**; it lifts
+  every city yet does **not** compress the cross-city spread. A φ=γ·sᵢ·sⱼ diagnostic
+  shows the data-dependent ZZ is < 0.1 rad for ~90 % of neighbour pairs, so the
+  M1/M2/M3 comparison (the core claim) is the next and still-untested step.
 - **Model ladder** ([`docs/model_ladder.md`](docs/model_ladder.md)): M0 pixel
   baseline → M1/M2/M3 all 38-param (one factor each) → M4 re-uploading, with
   parameter-matched classical twins and the ablation matrix. Main model M3 (9-to-9

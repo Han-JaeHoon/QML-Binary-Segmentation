@@ -153,5 +153,7 @@ gross double-correction.
 | EDA (Part 1–3) + representation check | ✅ |
 | Model design (M0–M4) + M3 circuit | ✅ |
 | Data: preprocess / pools / sampler | ✅ (smoke tests pass) |
-| Classical training pipeline | ⬜ next |
-| VQC training | ⬜ |
+| Training + evaluation infrastructure | ✅ (`models/qml.py`, `train/`) |
+| M3 capacity sweep 38/74/110 | ✅ [results](results_capacity_sweep.md) |
+| M1 vs M2 vs M3 at fixed capacity | ⬜ next — the core claim is still untested |
+| Classical baseline (teammate) | ⬜ |
