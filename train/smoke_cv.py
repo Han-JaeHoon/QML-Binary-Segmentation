@@ -20,7 +20,7 @@ paired-stream checksum assert and `predict_city_center`.
 
     python train/smoke_cv.py            # ~2-3 min, prints per-epoch BCE
 """
-import os, sys, json, argparse, warnings
+import os, sys, json, zlib, argparse, warnings
 warnings.filterwarnings("ignore")
 import numpy as np
 
@@ -37,7 +37,9 @@ import run_cv
 def synthetic_build_fold(train_cities, val_cities, raw_root, **kw):
     """Stand-in for preprocess.build_fold: same FoldArtifacts contract, random
     rasters, planted signal. Sizes vary per city like the real dataset does."""
-    rng = np.random.RandomState(abs(hash(tuple(train_cities))) % (2**31))
+    # crc32, not hash(): PYTHONHASHSEED is randomized per process, which would
+    # make this smoke non-reproducible run to run
+    rng = np.random.RandomState(zlib.crc32(",".join(train_cities).encode()) % (2**31))
     dcorr13, labels, valid = {}, {}, {}
     for i, c in enumerate(list(train_cities) + list(val_cities)):
         H, W = 46 + (i % 5) * 6, 52 + (i % 3) * 8

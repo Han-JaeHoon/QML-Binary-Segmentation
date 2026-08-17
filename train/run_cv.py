@@ -24,14 +24,20 @@ PROTOCOL (fixed here so it cannot drift between the two arms):
 
 The only difference between the two arms is the fixed CZ grid.
 
-Everything is written incrementally: a fold's results land on disk before the next
-fold starts, so an interrupted run loses at most one fold, and `--resume` skips
-folds that already have a completed record.
+Everything is written incrementally: each fold's record lands in its own
+fold<i>.json before the next fold starts, so an interrupted run loses at most one
+fold and `--resume` skips finished ones. Because the records are per-fold, several
+processes may run disjoint `--folds` concurrently on different cores — folds are
+independent by construction (their own fold object, own seeds, own arms), so
+splitting them changes no result. summary.json is a merge of whatever is done.
 
 Usage
     python train/run_cv.py --data_dir /path/to/OneraDataset \
         --depth 2 --tying untied --epochs 50 --steps_per_epoch 320 \
         --tag p2_l2 [--folds 0,1] [--resume]
+
+    # or split across cores (identical results, shorter wall-clock):
+    for f in 0 1 2 3 4; do python train/run_cv.py --data_dir ... --folds $f & done
 """
 import os, sys, json, time, zlib, argparse
 import numpy as np
@@ -130,14 +136,25 @@ def evaluate_arm(kind, cfg, params, fold, Xva, Sva):
     return per_city, pooled, np.concatenate(allp), np.concatenate(ally)
 
 
+def merge_summary(out, cfg):
+    """Rebuild summary.json from the per-fold records on disk.
+
+    Each fold writes its OWN fold{i}.json, so several processes can run
+    different --folds concurrently without clobbering a shared file; the merge
+    is just a read of whatever is finished."""
+    summary = {"config": vars(cfg), "folds": {}}
+    for f in sorted(os.listdir(out)):
+        if f.startswith("fold") and f.endswith(".json") and f != "summary.json":
+            fi = f[4:-5]
+            if fi.isdigit():
+                summary["folds"][fi] = json.load(open(os.path.join(out, f)))
+    json.dump(summary, open(os.path.join(out, "summary.json"), "w"), indent=1)
+    return summary
+
+
 def run(cfg):
     out = os.path.join(cfg.out_dir, cfg.tag)
     os.makedirs(out, exist_ok=True)
-    summary_path = os.path.join(out, "summary.json")
-    summary = {"config": vars(cfg), "folds": {}}
-    if cfg.resume and os.path.exists(summary_path):
-        summary = json.load(open(summary_path))
-        summary["config"] = vars(cfg)
 
     folds = get_grouped_folds(cfg.n_splits, seed=cfg.cv_seed)
     want = cfg.folds if cfg.folds else list(range(len(folds)))
@@ -146,7 +163,8 @@ def run(cfg):
           f"per arm | folds {want} -> {out}\n")
 
     for fi in want:
-        if str(fi) in summary["folds"] and summary["folds"][str(fi)].get("done"):
+        fold_path = os.path.join(out, f"fold{fi}.json")
+        if cfg.resume and os.path.exists(fold_path) and json.load(open(fold_path)).get("done"):
             print(f"--- fold {fi}: already complete, skipping (resume)\n"); continue
         train_cities, val_cities = folds[fi]
         print(f"--- fold {fi}  held-out: {val_cities}", flush=True)
@@ -208,14 +226,16 @@ def run(cfg):
                             **{f"{k}_p": pooled_scores[k][0] for k in ARMS},
                             y=pooled_scores["m1"][1])
 
-        summary["folds"][str(fi)] = rec
-        json.dump(summary, open(summary_path, "w"), indent=1)
+        json.dump(rec, open(fold_path, "w"), indent=1)
+        merge_summary(out, cfg)
         print(f"--- fold {fi} done in {rec['fold_seconds']/60:.1f} min | "
               f"pooled AP  M1 {rec['arms']['m1']['pooled']['AP']:.4f}  "
               f"M2 {rec['arms']['m2']['pooled']['AP']:.4f}  "
               f"dAP {rec['delta_AP_fold']:+.4f} | paired stream {same}\n", flush=True)
 
-    print(f"summary -> {summary_path}")
+    summary = merge_summary(out, cfg)
+    print(f"summary -> {os.path.join(out, 'summary.json')} "
+          f"({len(summary['folds'])} fold records)")
     return summary
 
 
