@@ -103,8 +103,13 @@ if __name__ == "__main__":
     print(f"    M1 (separable): max|I_ij| over all pairs = {i1.max():.2e}   expect ~0   {OK(t1)}")
     print(f"    M2 (CZ)       : NN pairs |I_ij| = " + ", ".join(f"{v:.2e}" for v in i2[:4]) +
           f"   expect != 0   {OK(t2)}")
+    # (0,8) and (2,6) are 4 hops apart on the NN grid, so neither reaches the
+    # other within the 2-layer light cone. The interaction appears because each
+    # input's TWO-HOP light cone overlaps: pixel 0 reaches {0,1,2,3,4,6},
+    # pixel 8 reaches {2,4,5,6,7,8}; the shared qubits {2,4,6} carry the cross
+    # term, and center_mean averages all nine expectations.
     print(f"    M2 far pairs (0,8),(2,6): " + ", ".join(f"{v:.2e}" for v in i2[4:]) +
-          "   (2 hops reachable via two entangling layers)")
+          "   (4 hops apart; cross term via overlapping 2-hop light cones)")
     results += [t1, t2]
 
     # 6) loss + gradient finite for both

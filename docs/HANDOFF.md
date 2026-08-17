@@ -319,6 +319,35 @@ pixels changed strongly — and M3 may be operating close to M1 over most of the
 
 ---
 
+## 7.5 Center branch (3×3 → 1) — what changed with it
+
+- **Readout:** `p = σ(a·mean_q⟨Z_q⟩ + b)`, a **parameter-free** aggregation over
+  all 9 qubits. Measuring only the centre qubit would leave 32 of 36 mixer
+  parameters structurally dead in M1 (its state is a product state, so
+  `⟨Z_centre⟩` depends on the centre pixel alone) and make "38 vs 38" a fake
+  parameter match.
+- **M1 is therefore NOT a "no spatial context" model.** It reads all 9 pixels but
+  combines them **additively** with no interaction terms. The right framing is
+  **separable/additive vs interacting/entangling** — which is a sharper question
+  than "does spatial information help", and it lines up neatly with the classical
+  twin (a 3×3 conv is also additive, but linear per pixel).
+- **The training target distribution changed.** In the 3×3→3×3 branch the loss
+  used all 9 patch labels, giving `π_pixel ≈ 21.8 %`. Center-only takes the
+  centre label alone, and the sampler picks categories **by centre**, so
+  `π_train ≈ 25 %` (measured `π_centre = 24.8 %`). Constant-predictor BCE
+  baselines therefore differ:
+
+  | branch | target prior | constant-predictor BCE |
+  |---|---|---|
+  | 3×3→3×3 (dense) | 21.8 % | **0.524** |
+  | 3×3→1 (centre) | 24.8 % | **0.562** |
+
+  **Never compare BCE values across the two branches** — the supervised target
+  distributions are different. Compare each against its own baseline above.
+- Note also that centre training runs at a ~25 % prior while cheap-val runs at the
+  natural ~2.2 %. AP depends on prevalence, so cheap-val AP is comparable
+  *between models* (same val set) but not to training BCE.
+
 ## 8. Interpretation discipline (please keep to this)
 
 These phrasings were agreed after several over-claims were caught:
