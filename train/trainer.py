@@ -21,7 +21,7 @@ Logged per epoch: train_BCE, cheap AP / best-F1 / tau, grad_norm, param_norm,
 lr, wall_time. At exhaustive checkpoints: per-city and pooled AP, F1,
 ChangeAcc, NoChangeAcc, Accuracy, tau*.
 """
-import os, sys, json, time
+import os, sys, json, time, zlib
 from dataclasses import dataclass, asdict, field
 import numpy as np
 import pennylane as qml
@@ -39,8 +39,8 @@ from preprocess import (build_fold, transform_pca4, transform_physical4,
 from pools import build_center_pools, fit_global_hard_threshold, eligible_mask
 from sampler import SpatialPatchSampler
 import qml as qmodels                       # models/qml.py
-from inference import (predict_city, predict_coordinates, evaluate_predictions,
-                       make_fixed_val_coordinates)
+from inference import (predict_city, predict_city_center, predict_coordinates,
+                       evaluate_predictions, make_fixed_val_coordinates)
 
 
 @dataclass
@@ -49,6 +49,7 @@ class TrainConfig:
     kind: str = "m3"
     depth: int = 1
     tying: str = "untied"
+    readout: str = "per_pixel"           # "per_pixel" (3x3->3x3) | "center_mean" (3x3->1)
     representation: str = "pca"          # "pca" | "physical"
     # optimization (PILOT defaults)
     lr: float = 0.02
@@ -82,21 +83,28 @@ def build_representation(fold, cities, representation):
     return X, S
 
 
-def make_batch(smp, X, S, labels, B, rng):
-    Xb, Sb, Yb = [], [], []
+def make_batch(smp, X, S, labels, B, rng, readout="per_pixel"):
+    """Returns (X,S,Y, idx). `idx` is the list of sampled (city,row,col) so the
+    caller can checksum the stream: M1 and M2 must see IDENTICAL batches for the
+    paired comparison. The sampler never sees the model, so the stream depends
+    only on the rng — the checksum verifies that empirically."""
+    Xb, Sb, Yb, idx = [], [], [], []
     for _ in range(B):
         c, _, r, cc = smp.sample_index(rng)
         Xb.append(X[c][r-1:r+2, cc-1:cc+2])
         Sb.append(S[c][r-1:r+2, cc-1:cc+2])
-        Yb.append(labels[c][r-1:r+2, cc-1:cc+2])
+        patch = labels[c][r-1:r+2, cc-1:cc+2]
+        Yb.append(patch[1, 1] if readout == "center_mean" else patch)
+        idx.append((c, r, cc))
     return (pnp.array(np.array(Xb), requires_grad=False),
             pnp.array(np.array(Sb), requires_grad=False),
-            pnp.array(np.array(Yb, dtype=float), requires_grad=False))
+            pnp.array(np.array(Yb, dtype=float), requires_grad=False),
+            idx)
 
 
 def run(cfg, data_dir):
     os.makedirs(cfg.out_dir, exist_ok=True)
-    spec = qmodels.ModelSpec(cfg.kind, cfg.depth, cfg.tying)
+    spec = qmodels.ModelSpec(cfg.kind, cfg.depth, cfg.tying, cfg.readout)
     tag = cfg.tag or f"{cfg.kind}_L{cfg.depth}_{cfg.tying}_{cfg.representation}"
     log_path = os.path.join(cfg.out_dir, f"{tag}.jsonl")
     print(f"=== {spec.label} | {cfg.representation} | {spec.n_params} params -> {log_path}")
@@ -149,8 +157,9 @@ def run(cfg, data_dir):
 
     def exhaustive_val(p):
         pn = np.asarray(p); per_city, allp, ally = {}, [], []
+        pc = predict_city_center if cfg.readout == 'center_mean' else predict_city
         for c in ex_cities:
-            P = predict_city(forward, pn, Xva[c], Sva[c], cfg.infer_batch)
+            P = pc(forward, pn, Xva[c], Sva[c], cfg.infer_batch)
             m = fold.valid[c]
             per_city[c] = evaluate_predictions(P, fold.labels[c], select_threshold=True, mask=m)
             allp.append(P[m].ravel()); ally.append(fold.labels[c][m].ravel())
@@ -172,15 +181,18 @@ def run(cfg, data_dir):
                             "train_cities": train_cities, "val_cities": val_cities}) + "\n")
 
         for epoch in range(1, cfg.epochs + 1):
-            losses = []
+            losses = []; epoch_idx = []
             for _ in range(cfg.steps_per_epoch):
-                Xb, Sb, Yb = make_batch(smp, Xtr, Str, fold.labels, cfg.batch, rng)
+                Xb, Sb, Yb, bidx = make_batch(smp, Xtr, Str, fold.labels,
+                                              cfg.batch, rng, cfg.readout)
+                epoch_idx.extend(bidx)
                 cost = lambda p: qmodels.bce_loss(p, Xb, Sb, Yb, forward, cfg.w_pos)
                 params, L = opt.step_and_cost(cost, params)
                 losses.append(float(L))
             g = np.asarray(qml.grad(cost)(params))          # last batch, for logging
             cv = cheap_val(params)
             rec = {"epoch": epoch, "train_BCE": float(np.mean(losses)),
+                   "stream_checksum": zlib.crc32(repr(epoch_idx).encode()),
                    "cheap_AP": cv["AP"], "cheap_best_F1": cv["F1"], "cheap_tau": cv["tau"],
                    "cheap_change_acc": cv["change_acc"],
                    "grad_norm": float(np.linalg.norm(g)),
@@ -207,7 +219,9 @@ def run(cfg, data_dir):
                     np.save(os.path.join(cfg.out_dir, f"{tag}_best.npy"), np.asarray(params))
             f.write(json.dumps(rec) + "\n"); f.flush()
 
-        f.write(json.dumps({"best_exhaustive": best, "best_cheap": best_cheap}) + "\n")
+        np.save(os.path.join(cfg.out_dir, f"{tag}_final.npy"), np.asarray(params))
+        f.write(json.dumps({"best_exhaustive": best, "best_cheap": best_cheap,
+                            "final_epoch": cfg.epochs}) + "\n")
     print(f"\nbest exhaustive AP: {best}\nbest cheap AP    : {best_cheap}")
     return {"exhaustive": best, "cheap": best_cheap}
 
@@ -216,7 +230,7 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--data_dir", required=True)
-    for fld in ("kind", "tying", "representation", "exhaustive_cities", "tag"):
+    for fld in ("kind", "tying", "readout", "representation", "exhaustive_cities", "tag"):
         ap.add_argument(f"--{fld}", type=str, default=None)
     for fld in ("depth", "batch", "steps_per_epoch", "epochs",
                 "cheap_val_per_city", "exhaustive_every", "seed", "infer_batch"):
