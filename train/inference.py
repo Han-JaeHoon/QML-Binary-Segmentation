@@ -67,6 +67,30 @@ def predict_city(forward, params, X_city, S_city, batch_size=4096, dtype=np.floa
     return acc / cnt
 
 
+def predict_city_center(forward, params, X_city, S_city, batch_size=4096, dtype=np.float32):
+    """Stride-1 full-city prediction for CENTER-output models (3x3 -> 1).
+    One prediction per pixel, so there is no overlap accumulation.
+    X_city (H,W,4); S_city (H,W) or (H,W,2)  ->  P (H,W) in [0,1]."""
+    H, W = X_city.shape[:2]
+    Xp, Sp = _reflect_pad(X_city), _reflect_pad(S_city)
+    centers = [(r, c) for r in range(H) for c in range(W)]
+    out = np.empty(H * W, dtype=dtype)
+    for i0 in range(0, len(centers), batch_size):
+        chunk = centers[i0:i0 + batch_size]
+        Xb = np.stack([Xp[r:r + 3, c:c + 3] for (r, c) in chunk])
+        Sb = np.stack([Sp[r:r + 3, c:c + 3] for (r, c) in chunk])
+        out[i0:i0 + len(chunk)] = np.asarray(forward(params, Xb, Sb), dtype=dtype).ravel()
+    return out.reshape(H, W)
+
+
+def save_mask_png(P, tau, path):
+    """Challenge deliverable: pixel-aligned binary mask, uint8 {0,255}, H x W."""
+    from PIL import Image
+    mask = ((np.asarray(P) >= tau).astype(np.uint8)) * 255
+    Image.fromarray(mask, mode="L").save(path)
+    return mask
+
+
 def make_fixed_val_coordinates(labels, valid, n=10000, seed=0, patch_size=3):
     """Fixed cheap-val centres, UNIFORM over eligible pixels -> natural prevalence.
     Deterministic given (labels, valid, n, seed)."""
@@ -88,7 +112,9 @@ def predict_coordinates(forward, params, X_city, S_city, coords, batch_size=4096
         ch = coords[i0:i0 + batch_size]
         Xb = np.stack([X_city[r - 1:r + 2, c - 1:c + 2] for (r, c) in ch])
         Sb = np.stack([S_city[r - 1:r + 2, c - 1:c + 2] for (r, c) in ch])
-        out[i0:i0 + len(ch)] = np.asarray(forward(params, Xb, Sb))[:, 1, 1]
+        pb = np.asarray(forward(params, Xb, Sb))
+        # per_pixel models return (B,3,3) -> take the centre; center_mean -> (B,)
+        out[i0:i0 + len(ch)] = pb if pb.ndim == 1 else pb[:, 1, 1]
     return out
 
 

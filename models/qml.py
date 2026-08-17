@@ -50,13 +50,15 @@ dev4 = qml.device("default.qubit", wires=4)
 
 @dataclass
 class ModelSpec:
-    kind: str = "m3"            # "m0" | "m1" | "m2" | "m3"
+    kind: str = "m3"            # "m0" | "m1" | "m2" (CZ) | "m2cnot" (legacy) | "m3"
     depth: int = 1              # L (ignored for m0)
     tying: str = "untied"       # "tied" | "untied" (ignored for m0, L=1)
+    readout: str = "per_pixel"  # "per_pixel" -> P (B,3,3) | "center_mean" -> P (B,)
 
     def __post_init__(self):
-        assert self.kind in ("m0", "m1", "m2", "m3")
+        assert self.kind in ("m0", "m1", "m2", "m2cnot", "m3")
         assert self.tying in ("tied", "untied")
+        assert self.readout in ("per_pixel", "center_mean")
         assert self.depth >= 1
 
     @property
@@ -74,14 +76,22 @@ class ModelSpec:
         if self.kind == "m0":
             return "M0 pixel-VQC"
         t = "" if self.depth == 1 else f" L={self.depth} {self.tying}"
-        return f"{self.kind.upper()}{t}"
+        r = "" if self.readout == "per_pixel" else " [center]"
+        return f"{self.kind.upper()}{t}{r}"
 
 
 # --- entanglers -------------------------------------------------------------
 def _entangle(kind, s):
     if kind == "m1":
-        return                                   # no spatial mixing
-    if kind == "m2":                             # fixed order: H sublayer, then V
+        return                                   # no spatial mixing (separable)
+    if kind == "m2":
+        # Fixed CZ on the 12 NN edges. CZ is diagonal, so the gates mutually
+        # commute -> the layer is ORDER-FREE and has no control/target choice.
+        # This removes the arbitrary ordering CNOT would force, and matches the
+        # structural form of M3's IsingZZ (also diagonal) for a fair M2<->M3.
+        for (i, j) in NN_EDGES: qml.CZ(wires=[i, j])
+        return
+    if kind == "m2cnot":                         # legacy: order matters -> pinned
         for (i, j) in H_EDGES: qml.CNOT(wires=[i, j])
         for (i, j) in V_EDGES: qml.CNOT(wires=[i, j])
         return
@@ -148,22 +158,41 @@ def _split_strength(S):
 
 
 # --- public API -------------------------------------------------------------
-def build_model(spec):
-    """Returns forward(params, X, S) -> P  (B,3,3)."""
-    def forward(params, X, S):
+def build_score(spec):
+    """Returns score(params, X, S) -> PRE-SIGMOID logit.
+    per_pixel   -> (B,3,3)
+    center_mean -> (B,)   logit = a * mean_q<Z_q> + b
+
+    Use this (not the probability) for interaction diagnostics: the sigmoid is
+    itself nonlinear and would manufacture apparent mixed effects even for a
+    strictly additive model.
+    """
+    def score(params, X, S):
         B = X.shape[0]
         if spec.kind == "m0":
             theta, w, b = _unpack(params, spec)
             x = X.reshape(B * 9, 4)                       # each pixel independently
             z = pnp.stack(_qnode4(x, theta)).T            # (B*9,4)
-            logit = pnp.sum(z * w, axis=1) + b
-            return (1.0 / (1.0 + pnp.exp(-logit))).reshape(B, 3, 3)
+            return (pnp.sum(z * w, axis=1) + b).reshape(B, 3, 3)
         theta, a, b = _unpack(params, spec)
         u = X.reshape(B, 9, 4)
         s1, s2 = _split_strength(S)
         z = pnp.stack(_qnode9(u, s1, s2, theta, spec.kind,
                               spec.depth, spec.tying == "tied")).T   # (B,9)
-        return (1.0 / (1.0 + pnp.exp(-(a * z + b)))).reshape(B, 3, 3)
+        if spec.readout == "center_mean":
+            # parameter-FREE aggregation over all 9 qubits, so every mixer
+            # parameter reaches the output even when there is no entangler.
+            return a * pnp.mean(z, axis=1) + b                        # (B,)
+        return (a * z + b).reshape(B, 3, 3)
+    return score
+
+
+def build_model(spec):
+    """Returns forward(params, X, S) -> P.
+    per_pixel -> (B,3,3);  center_mean -> (B,)"""
+    score = build_score(spec)
+    def forward(params, X, S):
+        return 1.0 / (1.0 + pnp.exp(-score(params, X, S)))
     return forward
 
 
@@ -203,12 +232,16 @@ if __name__ == "__main__":
 
     # structural check: does a NEIGHBOUR pixel influence the centre prediction?
     # M1 must be spatially independent; M2/M3 must not be.
-    print("\nneighbour-influence on centre pixel (perturb pixel (0,0)):")
+    # NOTE: use a small ADDITIVE perturbation, not a sign flip. CZ transmits
+    # <Z_r> = cos(pi*u_r) to its neighbours, and cos is EVEN, so negating a
+    # pixel's features is invisible through the CZ coupling channel (verified:
+    # negation gives 1e-16 for M2 while +0.15 gives 1.6e-2).
+    print("\nneighbour-influence on centre pixel (perturb pixel (0,1), +0.15 on ch0):")
     for spec in [ModelSpec("m1"), ModelSpec("m2"), ModelSpec("m3")]:
         f = build_model(spec); p = init_params(spec, seed=1)
         Xa = np.array(X, dtype=float); Xb = Xa.copy()
-        Xb[:, 0, 0, :] = -Xb[:, 0, 0, :]                 # perturb a corner pixel
-        Sa = np.array(S, dtype=float); Sb = Sa.copy(); Sb[:, 0, 0] = 1.0 - Sb[:, 0, 0]
+        Xb[:, 0, 1, 0] += 0.15                           # direct NN of the centre
+        Sa = np.array(S, dtype=float); Sb = Sa.copy(); Sb[:, 0, 1] = np.clip(Sb[:, 0, 1] + 0.15, 0, 1)
         c_a = np.asarray(f(p, pnp.array(Xa, requires_grad=False),
                              pnp.array(Sa, requires_grad=False)))[:, 1, 1]
         c_b = np.asarray(f(p, pnp.array(Xb, requires_grad=False),
