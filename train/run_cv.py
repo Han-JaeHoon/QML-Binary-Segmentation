@@ -208,6 +208,9 @@ def run(cfg):
     os.makedirs(out, exist_ok=True)
     folds, assign, fold_hash = fold_table(cfg.n_splits, cfg.cv_seed)
     meta = provenance(cfg)
+    # `folds` is a run-slicing detail, not a protocol parameter: drop it so every
+    # process (one per fold) writes byte-identical meta.json and races are harmless
+    meta["config"] = {k: v for k, v in meta["config"].items() if k != "folds"}
     meta["fold_assignment"] = {c: assign[c] for c in TRAIN_CITIES}
     meta["fold_assignment_sha256"] = fold_hash
     meta["folds"] = [{"fold": i, "train": t, "val": v} for i, (t, v) in enumerate(folds)]

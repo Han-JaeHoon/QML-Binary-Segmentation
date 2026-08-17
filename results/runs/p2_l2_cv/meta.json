@@ -1,0 +1,156 @@
+{
+ "schema_version": "cv-1.0",
+ "written_at": "2026-08-17T19:49:21+00:00",
+ "git_commit": "c32da1c157babda8a3236a00f9c779b1a90f9c58",
+ "git_dirty": true,
+ "host": "vm",
+ "python": "3.11.15",
+ "numpy": "1.26.4",
+ "pennylane": "0.45.0",
+ "sklearn": "1.9.0",
+ "pillow": "12.3.0",
+ "config": {
+  "data_dir": "/home/user/data/OneraDataset",
+  "depth": 2,
+  "tying": "untied",
+  "lr": 0.02,
+  "batch": 32,
+  "steps_per_epoch": 320,
+  "epochs": 50,
+  "cheap_every": 5,
+  "cheap_val_per_city": 3000,
+  "infer_batch": 4096,
+  "n_splits": 5,
+  "cv_seed": 0,
+  "init_seed": 0,
+  "stream_seed": 0,
+  "resume": true,
+  "print_folds": false,
+  "tag": "p2_l2_cv",
+  "out_dir": "/home/user/QML-Binary-Segmentation/results/runs"
+ },
+ "fold_assignment": {
+  "aguasclaras": 1,
+  "bercy": 2,
+  "bordeaux": 4,
+  "nantes": 0,
+  "paris": 2,
+  "rennes": 2,
+  "saclay_e": 1,
+  "abudhabi": 3,
+  "cupertino": 0,
+  "pisa": 1,
+  "beihai": 4,
+  "hongkong": 3,
+  "beirut": 3,
+  "mumbai": 0
+ },
+ "fold_assignment_sha256": "c22242aede982d21",
+ "folds": [
+  {
+   "fold": 0,
+   "train": [
+    "aguasclaras",
+    "bercy",
+    "bordeaux",
+    "paris",
+    "rennes",
+    "saclay_e",
+    "abudhabi",
+    "pisa",
+    "beihai",
+    "hongkong",
+    "beirut"
+   ],
+   "val": [
+    "cupertino",
+    "mumbai",
+    "nantes"
+   ]
+  },
+  {
+   "fold": 1,
+   "train": [
+    "bercy",
+    "bordeaux",
+    "nantes",
+    "paris",
+    "rennes",
+    "abudhabi",
+    "cupertino",
+    "beihai",
+    "hongkong",
+    "beirut",
+    "mumbai"
+   ],
+   "val": [
+    "saclay_e",
+    "pisa",
+    "aguasclaras"
+   ]
+  },
+  {
+   "fold": 2,
+   "train": [
+    "aguasclaras",
+    "bordeaux",
+    "nantes",
+    "saclay_e",
+    "abudhabi",
+    "cupertino",
+    "pisa",
+    "beihai",
+    "hongkong",
+    "beirut",
+    "mumbai"
+   ],
+   "val": [
+    "paris",
+    "bercy",
+    "rennes"
+   ]
+  },
+  {
+   "fold": 3,
+   "train": [
+    "aguasclaras",
+    "bercy",
+    "bordeaux",
+    "nantes",
+    "paris",
+    "rennes",
+    "saclay_e",
+    "cupertino",
+    "pisa",
+    "beihai",
+    "mumbai"
+   ],
+   "val": [
+    "hongkong",
+    "abudhabi",
+    "beirut"
+   ]
+  },
+  {
+   "fold": 4,
+   "train": [
+    "aguasclaras",
+    "bercy",
+    "nantes",
+    "paris",
+    "rennes",
+    "saclay_e",
+    "abudhabi",
+    "cupertino",
+    "pisa",
+    "hongkong",
+    "beirut",
+    "mumbai"
+   ],
+   "val": [
+    "bordeaux",
+    "beihai"
+   ]
+  }
+ ]
+}
