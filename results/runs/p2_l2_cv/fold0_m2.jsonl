@@ -10,3 +10,4 @@
 {"record": "epoch", "epoch": 9, "train_BCE": 0.47127994779322196, "train_BCE_last_step": 0.34191365447530464, "stream_checksum": 1069623009, "param_norm": 14.326743676882252, "wall_time": 970.6541700363159}
 {"record": "epoch", "epoch": 10, "train_BCE": 0.47813296151485074, "train_BCE_last_step": 0.4550559921520687, "stream_checksum": 2030861589, "param_norm": 14.13185042554901, "wall_time": 1073.1500861644745, "cheap_AP": 0.1483028625682511, "cheap_F1": 0.27819548872180455}
 {"record": "epoch", "epoch": 11, "train_BCE": 0.4799535604570072, "train_BCE_last_step": 0.47103923381516377, "stream_checksum": 678924057, "param_norm": 14.485189105600258, "wall_time": 1203.1564264297485}
+{"record": "epoch", "epoch": 12, "train_BCE": 0.471369474479828, "train_BCE_last_step": 0.4223375316397201, "stream_checksum": 134395111, "param_norm": 15.009899876871211, "wall_time": 1309.021627664566}
