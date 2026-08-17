@@ -76,8 +76,10 @@ if __name__ == "__main__":
 
     rec = summary["folds"]["0"]
     m1, m2 = rec["arms"]["m1"], rec["arms"]["m2"]
-    log = lambda k: [json.loads(l) for l in
-                     open(os.path.join(cfg.out_dir, cfg.tag, f"fold0_{k}.jsonl"))][1:]
+    # the jsonl carries header / epoch / footer records — keep the epochs
+    log = lambda k: [r for r in (json.loads(l) for l in
+                     open(os.path.join(cfg.out_dir, cfg.tag, f"fold0_{k}.jsonl")))
+                     if r.get("record") == "epoch"]
     checks = []
 
     def chk(label, cond, detail=""):
@@ -102,8 +104,23 @@ if __name__ == "__main__":
         "delta_AP_fold" in rec and len(rec["delta_AP_per_city"]) == len(rec["val_cities"]))
     chk("[S8] incremental artefacts on disk",
         all(os.path.exists(os.path.join(cfg.out_dir, cfg.tag, f))
-            for f in ("summary.json", "fold0_m1_final.npy", "fold0_m2_final.npy",
-                      "fold0_oof.npz")))
+            for f in ("meta.json", "summary.json", "fold0.json",
+                      "fold0_m1.jsonl", "fold0_m2.jsonl",
+                      "fold0_m1_final.npy", "fold0_m2_final.npy",
+                      "fold0_maps.npz")))
+    import numpy as _np
+    z = _np.load(os.path.join(cfg.out_dir, cfg.tag, "fold0_maps.npz"))
+    cities = [str(c) for c in z["cities"]]
+    chk("[S9] OOF maps: every held-out pixel addressable per city",
+        all(z[f"{c}__p_m1"].shape == z[f"{c}__y"].shape == z[f"{c}__valid"].shape
+            for c in cities) and len(cities) == len(rec["val_cities"]),
+        f"{cities} shapes {[z[c+'__p_m1'].shape for c in cities]}")
+    chk("[S10] final checkpoint recorded (digest + vector)",
+        all(len(m["final_checkpoint"]["params"]) == 74 and
+            len(m["final_checkpoint"]["sha256"]) == 16 for m in (m1, m2)))
+    chk("[S11] per-epoch checksums stored for both arms in the fold record",
+        len(m1["stream_checksums"]) == len(m2["stream_checksums"]) == cfg.epochs
+        and m1["stream_checksums"] == m2["stream_checksums"])
     print(f"\nBCE per epoch  M1 {[round(x,4) for x in b1]}")
     print(f"BCE per epoch  M2 {[round(x,4) for x in b2]}")
     print(f"\n{sum(checks)}/{len(checks)} smoke checks passed")
