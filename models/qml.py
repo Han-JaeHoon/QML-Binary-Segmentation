@@ -44,19 +44,20 @@ NN_EDGES = H_EDGES + V_EDGES          # 12 nearest-neighbour couplings
 RING4 = [(0,1),(1,2),(2,3),(3,0)]     # M0 spectral ring
 GAMMA = np.pi / 2                     # fixed ZZ feature-map coupling
 
-# --- geometry-scrambled control (M_perm) ------------------------------------
-# The SAME 12-edge graph as the spatial grid, but the qubit<->pixel assignment
-# is permuted, so the coupling graph is structurally identical (12 edges, same
-# degree sequence, same CZ gate family) while being spatially meaningless.
-# This makes the ladder change exactly one thing at a time:
-#     M1 -> M_perm : add 12 CZ couplings          (generic entanglement effect)
-#     M_perm -> M2 : the same 12 CZ, now aligned  (spatial topology effect)
-# PERM was selected so the permuted edge set shares ZERO edges with the grid
-# (asserted in train/accept_mperm.py).
-# NOTE: an index-order CZ ring is NOT a geometry-agnostic control here — it
-# shares 6 of its 9 edges with the grid (all six horizontal neighbours).
-PERM = (3, 5, 1, 8, 0, 7, 6, 4, 2)
-PERM_EDGES = [tuple(sorted((PERM[a], PERM[b]))) for (a, b) in NN_EDGES]
+# --- CZ ring entangler (M_ring, HEA-style control) --------------------------
+# A plain 9-qubit CZ ring in index order, applied after each encoding stage —
+# the standard "hardware-efficient ansatz" entangler. It sits between the
+# separable model and the task-inspired spatial grid as an architecture-
+# sensitivity control.
+#
+# INTERPRETATION GUARD — this ring is NOT a geometry-agnostic or "pure topology"
+# control on a 3x3 raster layout:
+#   * 6 of its 9 edges coincide with real horizontal spatial neighbours
+#     (0,1)(1,2)(3,4)(4,5)(6,7)(7,8); only (2,3),(5,6),(8,0) are non-spatial.
+#   * it uses 9 CZ per stage vs the grid's 12, so gate count is not matched.
+# Therefore an M_ring vs M2 difference must NOT be read as a topology-only
+# effect. Call it a ring-topology entangling baseline.
+RING9 = [(0,1),(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,0)]
 
 dev9 = qml.device("default.qubit", wires=9)
 dev4 = qml.device("default.qubit", wires=4)
@@ -64,13 +65,13 @@ dev4 = qml.device("default.qubit", wires=4)
 
 @dataclass
 class ModelSpec:
-    kind: str = "m3"            # "m0"|"m1"|"m2"(grid CZ)|"mperm"(scrambled CZ)|"m2cnot"|"m3"
+    kind: str = "m3"            # "m0"|"m1"|"m2"(grid CZ)|"mring"(CZ ring)|"m2cnot"|"m3"
     depth: int = 1              # L (ignored for m0)
     tying: str = "untied"       # "tied" | "untied" (ignored for m0, L=1)
     readout: str = "per_pixel"  # "per_pixel" -> P (B,3,3) | "center_mean" -> P (B,)
 
     def __post_init__(self):
-        assert self.kind in ("m0", "m1", "m2", "mperm", "m2cnot", "m3")
+        assert self.kind in ("m0", "m1", "m2", "mring", "m2cnot", "m3")
         assert self.tying in ("tied", "untied")
         assert self.readout in ("per_pixel", "center_mean")
         assert self.depth >= 1
@@ -105,10 +106,12 @@ def _entangle(kind, s):
         # structural form of M3's IsingZZ (also diagonal) for a fair M2<->M3.
         for (i, j) in NN_EDGES: qml.CZ(wires=[i, j])
         return
-    if kind == "mperm":
-        # geometry-scrambled control: same 12-edge graph, permuted qubit<->pixel
-        # assignment. Diagonal & commuting like M2, so also order-free.
-        for (i, j) in PERM_EDGES: qml.CZ(wires=[i, j])
+    if kind == "mring":
+        # HEA-style CZ ring in index order; diagonal & commuting -> order-free.
+        # See the RING9 interpretation guard: 6/9 edges coincide with horizontal
+        # spatial neighbours, and 9 != 12 gates, so this is not a topology-only
+        # control.
+        for (i, j) in RING9: qml.CZ(wires=[i, j])
         return
     if kind == "m2cnot":                         # legacy: order matters -> pinned
         for (i, j) in H_EDGES: qml.CNOT(wires=[i, j])
