@@ -44,19 +44,33 @@ NN_EDGES = H_EDGES + V_EDGES          # 12 nearest-neighbour couplings
 RING4 = [(0,1),(1,2),(2,3),(3,0)]     # M0 spectral ring
 GAMMA = np.pi / 2                     # fixed ZZ feature-map coupling
 
+# --- geometry-scrambled control (M_perm) ------------------------------------
+# The SAME 12-edge graph as the spatial grid, but the qubit<->pixel assignment
+# is permuted, so the coupling graph is structurally identical (12 edges, same
+# degree sequence, same CZ gate family) while being spatially meaningless.
+# This makes the ladder change exactly one thing at a time:
+#     M1 -> M_perm : add 12 CZ couplings          (generic entanglement effect)
+#     M_perm -> M2 : the same 12 CZ, now aligned  (spatial topology effect)
+# PERM was selected so the permuted edge set shares ZERO edges with the grid
+# (asserted in train/accept_mperm.py).
+# NOTE: an index-order CZ ring is NOT a geometry-agnostic control here — it
+# shares 6 of its 9 edges with the grid (all six horizontal neighbours).
+PERM = (3, 5, 1, 8, 0, 7, 6, 4, 2)
+PERM_EDGES = [tuple(sorted((PERM[a], PERM[b]))) for (a, b) in NN_EDGES]
+
 dev9 = qml.device("default.qubit", wires=9)
 dev4 = qml.device("default.qubit", wires=4)
 
 
 @dataclass
 class ModelSpec:
-    kind: str = "m3"            # "m0" | "m1" | "m2" (CZ) | "m2cnot" (legacy) | "m3"
+    kind: str = "m3"            # "m0"|"m1"|"m2"(grid CZ)|"mperm"(scrambled CZ)|"m2cnot"|"m3"
     depth: int = 1              # L (ignored for m0)
     tying: str = "untied"       # "tied" | "untied" (ignored for m0, L=1)
     readout: str = "per_pixel"  # "per_pixel" -> P (B,3,3) | "center_mean" -> P (B,)
 
     def __post_init__(self):
-        assert self.kind in ("m0", "m1", "m2", "m2cnot", "m3")
+        assert self.kind in ("m0", "m1", "m2", "mperm", "m2cnot", "m3")
         assert self.tying in ("tied", "untied")
         assert self.readout in ("per_pixel", "center_mean")
         assert self.depth >= 1
@@ -90,6 +104,11 @@ def _entangle(kind, s):
         # This removes the arbitrary ordering CNOT would force, and matches the
         # structural form of M3's IsingZZ (also diagonal) for a fair M2<->M3.
         for (i, j) in NN_EDGES: qml.CZ(wires=[i, j])
+        return
+    if kind == "mperm":
+        # geometry-scrambled control: same 12-edge graph, permuted qubit<->pixel
+        # assignment. Diagonal & commuting like M2, so also order-free.
+        for (i, j) in PERM_EDGES: qml.CZ(wires=[i, j])
         return
     if kind == "m2cnot":                         # legacy: order matters -> pinned
         for (i, j) in H_EDGES: qml.CNOT(wires=[i, j])

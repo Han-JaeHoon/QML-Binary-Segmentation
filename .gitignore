@@ -20,3 +20,4 @@ venv/
 # training run artifacts (logs+metrics kept; weights regenerable)
 results/runs/*_best.npy
 results/runs/*_bestcheap.npy
+results/runs/p3_topology/*_maps.npz
