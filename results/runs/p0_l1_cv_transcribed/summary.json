@@ -1,0 +1,471 @@
+{
+ "schema_version": "cv-1.0",
+ "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f.",
+ "config": {
+  "depth": 1,
+  "tying": "untied",
+  "n_splits": 5,
+  "epochs": 50,
+  "steps_per_epoch": 320,
+  "batch": 32,
+  "lr": 0.02,
+  "readout": "center_mean",
+  "representation": "pca"
+ },
+ "macro_as_reported": {
+  "m1": {
+   "AP": 0.1419,
+   "roc_auc": 0.806,
+   "F1": 0.1994,
+   "change_acc": 0.347,
+   "nochange_acc": 0.926,
+   "accuracy": 0.915
+  },
+  "m2": {
+   "AP": 0.1276,
+   "roc_auc": 0.8,
+   "F1": 0.1877,
+   "change_acc": 0.319,
+   "nochange_acc": 0.95,
+   "accuracy": 0.938
+  }
+ },
+ "train_BCE_final_mean": {
+  "m1": 0.4665,
+  "m2": 0.4745
+ },
+ "folds": {
+  "0": {
+   "schema_version": "cv-1.0",
+   "fold": 0,
+   "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f.",
+   "train_cities": [
+    "aguasclaras",
+    "bercy",
+    "bordeaux",
+    "paris",
+    "rennes",
+    "saclay_e",
+    "abudhabi",
+    "pisa",
+    "beihai",
+    "hongkong",
+    "beirut"
+   ],
+   "val_cities": [
+    "cupertino",
+    "mumbai",
+    "nantes"
+   ],
+   "arms": {
+    "m1": {
+     "label": "M1 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "cupertino": {
+       "AP": 0.3201,
+       "prevalence": 0.0237,
+       "transcribed": true,
+       "complete": true
+      },
+      "mumbai": {
+       "AP": 0.151,
+       "prevalence": 0.0256,
+       "transcribed": true,
+       "complete": true
+      },
+      "nantes": {
+       "AP": 0.2721,
+       "prevalence": 0.0114,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.2519
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    },
+    "m2": {
+     "label": "M2 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "cupertino": {
+       "AP": 0.3324,
+       "prevalence": 0.0237,
+       "transcribed": true,
+       "complete": true
+      },
+      "mumbai": {
+       "AP": 0.134,
+       "prevalence": 0.0256,
+       "transcribed": true,
+       "complete": true
+      },
+      "nantes": {
+       "AP": 0.2072,
+       "prevalence": 0.0114,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.2447
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    }
+   },
+   "delta_AP_fold": -0.0072,
+   "delta_AP_per_city": {
+    "cupertino": 0.0123,
+    "mumbai": -0.017,
+    "nantes": -0.0649
+   },
+   "paired_stream_identical": true,
+   "done": true
+  },
+  "1": {
+   "schema_version": "cv-1.0",
+   "fold": 1,
+   "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f.",
+   "train_cities": [
+    "bercy",
+    "bordeaux",
+    "nantes",
+    "paris",
+    "rennes",
+    "abudhabi",
+    "cupertino",
+    "beihai",
+    "hongkong",
+    "beirut",
+    "mumbai"
+   ],
+   "val_cities": [
+    "saclay_e",
+    "pisa",
+    "aguasclaras"
+   ],
+   "arms": {
+    "m1": {
+     "label": "M1 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "saclay_e": {
+       "AP": 0.0114,
+       "prevalence": 0.0099,
+       "transcribed": true,
+       "complete": true
+      },
+      "pisa": {
+       "AP": 0.029,
+       "prevalence": 0.0164,
+       "transcribed": true,
+       "complete": true
+      },
+      "aguasclaras": {
+       "AP": 0.1249,
+       "prevalence": 0.0164,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.0224
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    },
+    "m2": {
+     "label": "M2 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "saclay_e": {
+       "AP": 0.0138,
+       "prevalence": 0.0099,
+       "transcribed": true,
+       "complete": true
+      },
+      "pisa": {
+       "AP": 0.0268,
+       "prevalence": 0.0164,
+       "transcribed": true,
+       "complete": true
+      },
+      "aguasclaras": {
+       "AP": 0.0693,
+       "prevalence": 0.0164,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.0211
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    }
+   },
+   "delta_AP_fold": -0.0013,
+   "delta_AP_per_city": {
+    "saclay_e": 0.0024,
+    "pisa": -0.0022,
+    "aguasclaras": -0.0556
+   },
+   "paired_stream_identical": true,
+   "done": true
+  },
+  "2": {
+   "schema_version": "cv-1.0",
+   "fold": 2,
+   "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f.",
+   "train_cities": [
+    "aguasclaras",
+    "bordeaux",
+    "nantes",
+    "saclay_e",
+    "abudhabi",
+    "cupertino",
+    "pisa",
+    "beihai",
+    "hongkong",
+    "beirut",
+    "mumbai"
+   ],
+   "val_cities": [
+    "paris",
+    "bercy",
+    "rennes"
+   ],
+   "arms": {
+    "m1": {
+     "label": "M1 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "paris": {
+       "AP": 0.0279,
+       "prevalence": 0.0029,
+       "transcribed": true,
+       "complete": true
+      },
+      "bercy": {
+       "AP": 0.0414,
+       "prevalence": 0.0074,
+       "transcribed": true,
+       "complete": true
+      },
+      "rennes": {
+       "AP": 0.4557,
+       "prevalence": 0.0258,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.1299
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    },
+    "m2": {
+     "label": "M2 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "paris": {
+       "AP": 0.0325,
+       "prevalence": 0.0029,
+       "transcribed": true,
+       "complete": true
+      },
+      "bercy": {
+       "AP": 0.0491,
+       "prevalence": 0.0074,
+       "transcribed": true,
+       "complete": true
+      },
+      "rennes": {
+       "AP": 0.40959999999999996,
+       "prevalence": 0.0258,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.1344
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    }
+   },
+   "delta_AP_fold": 0.0045,
+   "delta_AP_per_city": {
+    "paris": 0.0046,
+    "bercy": 0.0077,
+    "rennes": -0.0461
+   },
+   "paired_stream_identical": true,
+   "done": true
+  },
+  "3": {
+   "schema_version": "cv-1.0",
+   "fold": 3,
+   "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f.",
+   "train_cities": [
+    "aguasclaras",
+    "bercy",
+    "bordeaux",
+    "nantes",
+    "paris",
+    "rennes",
+    "saclay_e",
+    "cupertino",
+    "pisa",
+    "beihai",
+    "mumbai"
+   ],
+   "val_cities": [
+    "hongkong",
+    "abudhabi",
+    "beirut"
+   ],
+   "arms": {
+    "m1": {
+     "label": "M1 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "hongkong": {
+       "AP": 0.1518,
+       "prevalence": 0.0356,
+       "transcribed": true,
+       "complete": true
+      },
+      "abudhabi": {
+       "AP": 0.0726,
+       "prevalence": 0.0376,
+       "transcribed": true,
+       "complete": true
+      },
+      "beirut": {
+       "AP": 0.1725,
+       "prevalence": 0.0269,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.1222
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    },
+    "m2": {
+     "label": "M2 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "hongkong": {
+       "AP": 0.1497,
+       "prevalence": 0.0356,
+       "transcribed": true,
+       "complete": true
+      },
+      "abudhabi": {
+       "AP": 0.07429999999999999,
+       "prevalence": 0.0376,
+       "transcribed": true,
+       "complete": true
+      },
+      "beirut": {
+       "AP": 0.1676,
+       "prevalence": 0.0269,
+       "transcribed": true,
+       "complete": true
+      }
+     },
+     "pooled": {
+      "AP": 0.1175
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    }
+   },
+   "delta_AP_fold": -0.0047,
+   "delta_AP_per_city": {
+    "hongkong": -0.0021,
+    "abudhabi": 0.0017,
+    "beirut": -0.0049
+   },
+   "paired_stream_identical": true,
+   "done": true
+  },
+  "4": {
+   "schema_version": "cv-1.0",
+   "fold": 4,
+   "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f.",
+   "train_cities": [
+    "aguasclaras",
+    "bercy",
+    "nantes",
+    "paris",
+    "rennes",
+    "saclay_e",
+    "abudhabi",
+    "cupertino",
+    "pisa",
+    "hongkong",
+    "beirut",
+    "mumbai"
+   ],
+   "val_cities": [
+    "bordeaux",
+    "beihai"
+   ],
+   "arms": {
+    "m1": {
+     "label": "M1 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "bordeaux": {
+       "AP": null,
+       "prevalence": 0.01,
+       "transcribed": true,
+       "complete": false
+      },
+      "beihai": {
+       "AP": null,
+       "prevalence": 0.0249,
+       "transcribed": true,
+       "complete": false
+      }
+     },
+     "pooled": {
+      "AP": 0.0784
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    },
+    "m2": {
+     "label": "M2 L=1 [center]",
+     "n_params": 38,
+     "per_city": {
+      "bordeaux": {
+       "AP": null,
+       "prevalence": 0.01,
+       "transcribed": true,
+       "complete": false
+      },
+      "beihai": {
+       "AP": null,
+       "prevalence": 0.0249,
+       "transcribed": true,
+       "complete": false
+      }
+     },
+     "pooled": {
+      "AP": 0.0706
+     },
+     "source": "TRANSCRIBED from the P0 run report (chat message, 2026-08-18); not read from P0 artefacts. M2 per-fold AP = M1 AP + dAP_f."
+    }
+   },
+   "delta_AP_fold": -0.0078,
+   "delta_AP_per_city": {
+    "bordeaux": -0.0026,
+    "beihai": -0.0343
+   },
+   "paired_stream_identical": true,
+   "done": true
+  }
+ }
+}

@@ -77,12 +77,20 @@ def fold_ap(folds):
 
 
 def city_ap(folds):
+    """city -> AP per arm. Cities whose AP is missing for either arm are dropped:
+    an adapted/transcribed run may carry deltas without the underlying APs."""
     out = {a: {} for a in ARMS}
     for fi, rec in folds.items():
         for a in ARMS:
             for c, m in rec["arms"][a]["per_city"].items():
                 out[a][c] = m["AP"]
-    return out
+    keep = [c for c in out["m1"]
+            if out["m1"].get(c) is not None and out["m2"].get(c) is not None]
+    dropped = [c for c in out["m1"] if c not in keep]
+    if dropped:
+        print(f"  (city table: {len(dropped)} of {len(out['m1'])} cities have no "
+              f"per-city AP in this source and are omitted: {', '.join(dropped)})")
+    return {a: {c: out[a][c] for c in keep} for a in ARMS}
 
 
 def report(tag, path):
