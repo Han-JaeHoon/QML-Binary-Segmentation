@@ -21,3 +21,5 @@ venv/
 results/runs/*_best.npy
 results/runs/*_bestcheap.npy
 results/runs/p3_topology/*_maps.npz
+results/submission/masks/*_prob.npz
+results/submission/*_model.npz
