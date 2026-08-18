@@ -18,10 +18,15 @@ everything, and what to do next.
   full-city evaluation). A capacity sweep (38/74/110 params) is done.
 - **Best number so far** (dev 11/3 split, 3 held-out cities, pooled, single global
   threshold): **AP 0.147, F1\* 0.302, ROC-AUC 0.899** at 74 params.
-- **The project's central claim is still untested:** every run so far has been M3.
-  Nobody has yet checked whether the data-dependent ZZ coupling actually beats
-  *no* spatial mixing (M1) or a *fixed* CNOT coupling (M2). **That is the next
-  experiment.**
+- **The central experiment is DONE** ([`results_p0_entanglement.md`](results_p0_entanglement.md)):
+  M1 (separable, 38p) vs M2-CZ (entangling, 38p), 5-fold city-grouped, all
+  controls asserted (same fold transforms, same init, same patch stream).
+  **Result: mean ΔAP = −0.0033 ± 0.0045, M2 wins 1/5 folds and 5/14 cities.**
+  Fixed CZ entanglement produces genuine interactions (verified `|I_ij| ~ 1e-3`
+  vs M1's `1e-16`) but gives **no useful inductive bias** at this budget — an
+  honest negative result, with the "the entangler did nothing" objection ruled
+  out by construction. **M1(38) is therefore the QML model for the headline
+  comparison against the 37-param classical conv.**
 - **Division of labour:** a teammate builds the classical baseline; this repo is
   the quantum side (training, gradients, runtime, ablations).
 
