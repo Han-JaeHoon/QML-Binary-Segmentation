@@ -113,11 +113,20 @@ as a prior here.)
 
 ### (c) Which city you test on matters far more than which circuit you use
 
-Same model, 14 held-out cities: AP ranges **0.026 (saclay_e) to 0.446 (rennes)** —
-a **17× spread**, an order of magnitude larger than any architecture difference.
-This is the same cross-city difficulty the EDA found at the very start (land-cover
+![held-out city comparison](../results/p3_matrix/heldout_city_comparison.png)
+
+Same model (M1 L3), 14 held-out cities: AP ranges **0.0232 (saclay_e) to 0.4575
+(rennes)** — a **19.7× spread**, an order of magnitude larger than any
+architecture difference (largest per-city gap 0.150, mean 0.039–0.052). This is
+the same cross-city difficulty the EDA found at the very start (land-cover
 features separating urban from natural change scored 0.59 under random CV but
 0.53 — chance — under city-grouped CV).
+
+> Earlier revisions of this file quoted 0.026 / 0.446 and "17×". Those values do
+> not correspond to any cell in the committed matrix; the numbers above are read
+> straight from `results/runs/p3_topology/m1_L3_fold*.json` by
+> `train/compare_heldout_cities.py` and match
+> [`results_heldout_city_comparison.md`](results_heldout_city_comparison.md).
 
 **Practical implication:** the binding constraint is domain shift between cities,
 not the quantum circuit design.

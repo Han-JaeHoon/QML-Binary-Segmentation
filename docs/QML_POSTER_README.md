@@ -458,6 +458,8 @@ milano 0.55, chongqing 2.09 (%).
 | file | content |
 |---|---|
 | `results/p3_matrix/p3_summary.png` | capacity curves + per-city spread (main results figure) |
+| `results/p3_matrix/city_split.png` | the 24-city split — which 14 every metric comes from, and why the 10 have none |
+| `results/p3_matrix/heldout_city_comparison.png` | M1 vs M2 vs M_ring on each held-out city + paired differences (evidence for Finding 3) |
 | `results/circuits/circuit_m1.png` | M1 circuit, barrier-separated stages |
 | `results/circuits/circuit_mring.png` | M_ring circuit |
 | `results/circuits/circuit_m2.png` | M2 circuit |

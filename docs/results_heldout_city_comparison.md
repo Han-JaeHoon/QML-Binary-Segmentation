@@ -8,6 +8,12 @@ The 10 OSCD **test** cities have no ground truth (`data/splits.py` — `TEST_CIT
 
 The comparison is paired — identical fold assignment, identical initialisation and identical training patch stream across models, so the circuit is the only difference and per-city differences are matched pairs.
 
+![the 24-city split](../results/p3_matrix/city_split.png)
+
+![held-out city comparison](../results/p3_matrix/heldout_city_comparison.png)
+
+Both figures come from the same fold records as the tables below (`python train/plot_heldout_comparison.py`).
+
 Primary metric here: **AP**. Chance level for AP is the city's own prevalence (~2.3 % overall), so AP values must be read against that column.
 
 

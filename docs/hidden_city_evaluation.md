@@ -11,6 +11,8 @@ cannot do about it, and what each option needs.
 
 ## 1. The split, precisely
 
+![the 24-city split](../results/p3_matrix/city_split.png)
+
 | | cities | labels | role here |
 |---|---|---|---|
 | train | 14 | yes | transform fitting, training, 5-fold city-grouped CV, threshold choice |
@@ -42,12 +44,19 @@ number — the same kind of cross-city generalization test the 10 hidden cities
 would provide, with 14 held-out cities instead of 10, and with matched pairing
 across architectures (same folds, same init, same patch stream).
 
+![held-out city comparison](../results/p3_matrix/heldout_city_comparison.png)
+
+*Left: the same held-out city scored by all three circuits. Right: the paired
+per-city difference against M1 — dashed lines are the means. Every point is a
+city that model never trained on.*
+
 [`results_heldout_city_comparison.md`](results_heldout_city_comparison.md) is
 that comparison written out per city — M1 vs M2 vs M_ring, one row per held-out
-city, with paired differences and win counts. Regenerate with:
+city, with paired differences and win counts. Regenerate both with:
 
 ```bash
-python train/compare_heldout_cities.py            # no dataset, no GPU, ~1 s
+python train/compare_heldout_cities.py            # tables,  no dataset, no GPU, ~1 s
+python train/plot_heldout_comparison.py           # figures, no dataset, no GPU, ~2 s
 ```
 
 At L3 (110 params) it reports M1 ahead on macro AP 0.1748 vs 0.1358 (M2) and

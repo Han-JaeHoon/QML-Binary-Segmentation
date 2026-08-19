@@ -48,7 +48,8 @@ ax[1].barh(y, apv, color="#1f77b4", label="AP (M1 L3)")
 ax[1].plot(prv, y, "k.", ms=9, label="chance level = prevalence")
 ax[1].set_yticks(y); ax[1].set_yticklabels(order, fontsize=9)
 ax[1].set_xlabel("Average Precision")
-ax[1].set_title("Same model, 14 held-out cities:\n17x spread is the dominant effect")
+ax[1].set_title(f"Same model, 14 held-out cities:\n"
+                f"{max(apv) / max(min(apv), 1e-9):.1f}x spread is the dominant effect")
 ax[1].legend(frameon=False, loc="lower right"); ax[1].grid(alpha=.25, axis="x")
 
 fig.tight_layout()

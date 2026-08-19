@@ -229,8 +229,12 @@ raw T1/T2 → robust per-band norm → per-image median-corrected |dB|
   10 test cities have no ground truth and are predict-only. Per-city,
   model-vs-model tables are in
   [`docs/results_heldout_city_comparison.md`](docs/results_heldout_city_comparison.md)
-  (regenerate: `python train/compare_heldout_cities.py`); scoring the 10 hidden
-  cities if their labels are released is `train/score_hidden_cities.py`.
+  (regenerate: `python train/compare_heldout_cities.py` for the tables,
+  `python train/plot_heldout_comparison.py` for
+  [`city_split.png`](results/p3_matrix/city_split.png) and
+  [`heldout_city_comparison.png`](results/p3_matrix/heldout_city_comparison.png));
+  scoring the 10 hidden cities if their labels are released is
+  `train/score_hidden_cities.py`.
 - **Model ladder** ([`docs/model_ladder.md`](docs/model_ladder.md)): M0 pixel
   baseline → M1/M2/M3 all 38-param (one factor each) → M4 re-uploading, with
   parameter-matched classical twins and the ablation matrix. Main model M3 (9-to-9

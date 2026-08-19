@@ -118,6 +118,10 @@ def write_report(cells, folds, depths, metric, path):
     A("The comparison is paired — identical fold assignment, identical "
       "initialisation and identical training patch stream across models, so the "
       "circuit is the only difference and per-city differences are matched pairs.\n")
+    A("![the 24-city split](../results/p3_matrix/city_split.png)\n")
+    A("![held-out city comparison](../results/p3_matrix/heldout_city_comparison.png)\n")
+    A("Both figures come from the same fold records as the tables below "
+      "(`python train/plot_heldout_comparison.py`).\n")
     A(f"Primary metric here: **{metric}**. Chance level for AP is the city's own "
       "prevalence (~2.3 % overall), so AP values must be read against that column.\n")
 
