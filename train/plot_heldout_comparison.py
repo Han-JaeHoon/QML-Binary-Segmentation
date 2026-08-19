@@ -4,7 +4,7 @@ these numbers on, and is the model comparison fair?"
 
   city_split.png              the 24-city split: 14 labelled cities that every
                               metric comes from (coloured by CV fold), 10
-                              hidden-label cities that can only be predicted.
+                              test cities, which this project has never scored.
   heldout_city_comparison.png M1 vs M2 vs M_ring on each of the 14 held-out
                               cities, plus the paired per-city differences.
 
@@ -81,10 +81,10 @@ def fig_city_split(fold_of, path):
              FOLD_COLORS[f], sub=f"held out in fold {f}")
 
     # --- hidden -------------------------------------------------------------
-    ax.text(0, 1.72, "10 hidden-label cities  —  no ground truth, so NO metric can be computed",
+    ax.text(0, 1.72, "10 test cities  —  never trained, tuned or selected on; NOT SCORED here",
             fontsize=11.5, fontweight="bold", color="#8a1a1a")
-    ax.text(0, 1.42, "Imagery only. The deliverable is one predicted {0,255} mask per city "
-                     "(results/submission/masks/).",
+    ax.text(0, 1.42, "OSCD publishes labels for these separately; this project never used them. "
+                     "So far the only output is one predicted {0,255} mask per city.",
             fontsize=9.2, color="#444")
     for i, c in enumerate(TEST_CITIES):
         r, k = divmod(i, 5)

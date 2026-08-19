@@ -5,8 +5,10 @@ Plain-language summary of the quantum side. Numbers come from one harness
 [`../results/p3_matrix/matrix.csv`](../results/p3_matrix/matrix.csv).
 
 **All metrics below are over the 14 labelled cities, each held out in full
-exactly once.** The 10 OSCD test cities have no ground truth, so nothing can be
-scored on them here — they get predicted masks only (§5). Per-city model-vs-model
+exactly once.** The 10 OSCD test cities have **not been evaluated** — OSCD
+publishes their labels separately and this project never used them, so the only
+output for those cities is a predicted mask (§5). Scoring them is outstanding
+work. Per-city model-vs-model
 tables: [`results_heldout_city_comparison.md`](results_heldout_city_comparison.md).
 What scoring the 10 would require: [`hidden_city_evaluation.md`](hidden_city_evaluation.md).
 

@@ -7,7 +7,9 @@ import numpy as np
 TRAIN_CITIES = ["aguasclaras","bercy","bordeaux","nantes","paris","rennes","saclay_e",
                 "abudhabi","cupertino","pisa","beihai","hongkong","beirut","mumbai"]
 
-# 10 hidden-label test cities (used only in final mode, predict-only).
+# 10 OSCD test cities. Their labels are published separately by OSCD but were
+# never downloaded or used in this project, so nothing here is trained, tuned or
+# selected on them; final mode only predicts over them.
 TEST_CITIES = ["brasilia","montpellier","norcia","rio","saclay_w","valencia",
                "dubai","lasvegas","milano","chongqing"]
 

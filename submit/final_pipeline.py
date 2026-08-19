@@ -9,16 +9,16 @@ Three stages, runnable separately so nothing here waits on the experiments:
              out-of-fold choice — the threshold never sees the hidden test set.
   train      refit the transforms on ALL 14 labelled cities and train the chosen
              architecture on them with the frozen protocol.
-  predict    run the final model over the 10 hidden-label cities and write the
+  predict    run the final model over the 10 test cities and write the
              deliverable: a pixel-aligned uint8 {0,255} PNG per city, plus the
              probability map per city (needed later for any threshold-free
              metric — see train/score_hidden_cities.py). Masks go to
              results/submission/masks_<kind>_L<depth>/, so running a comparison
              architecture cannot overwrite the frozen submission in masks/.
 
-The 10 test cities have imagery but no labels, so `dcorr13_unlabeled` mirrors
-preprocess.build_dcorr13 while taking the raster shape from the image instead of
-the label. The per-pair median correction is label-free and per-image, so it
+This pipeline never reads test-city labels (OSCD ships them separately and they
+are unused here), so `dcorr13_unlabeled` mirrors preprocess.build_dcorr13 while
+taking the raster shape from the image instead of the label. The per-pair median correction is label-free and per-image, so it
 applies to the test cities exactly as it does in training.
 
 Leakage discipline: tau* comes from out-of-fold predictions only, and is FROZEN
@@ -54,7 +54,7 @@ SWEEP = os.path.join(ROOT, "results", "runs", "p3_topology")
 
 # --------------------------------------------------------------------------- #
 def dcorr13_unlabeled(city, raw_root, band_stats):
-    """|dB^corr|_13 for a city with no ground truth (shape taken from imagery)."""
+    """|dB^corr|_13 without reading any label (shape taken from imagery)."""
     t1 = pre._load_bands(raw_root, city, "imgs_1_rect")
     t2 = pre._load_bands(raw_root, city, "imgs_2_rect")
     H = min(t1.shape[0], t2.shape[0]); W = min(t1.shape[1], t2.shape[1])

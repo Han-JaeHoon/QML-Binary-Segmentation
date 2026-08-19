@@ -1,11 +1,23 @@
-# Evaluating on the 10 hidden cities — what is possible, and what it costs
+# Evaluating on the 10 test cities — outstanding work
 
 Raised in review: *"the 5-fold CV is over the training cities only — isn't the
 point of the 10 validation cities to compare the two models on them? The results
 section only reports the 14."*
 
-Both halves of the observation are correct. This note says what the repo can and
-cannot do about it, and what each option needs.
+**The review is right, and the answer is yes: we should evaluate on the 10, and
+have not.** An earlier version of this note claimed their ground truth was
+withheld. That was wrong — **OSCD publishes labels for the test cities**, as a
+separate download alongside the train labels
+([dataset page](https://rcdaudt.github.io/oscd/); `torchgeo`'s OSCD loader
+exposes a `test` split with masks). This project simply never downloaded or used
+them: `data/preprocess.py` only ever resolves
+`train_labels/… - Train Labels`, and no code path in the repo references test
+labels at all.
+
+So the 10 cities are unscored, not unscorable. Nothing in the project is trained,
+tuned or selected on them — which is why the model selection below stands on its
+own — but a test-set number is genuinely missing and this note says what it takes
+to produce one.
 
 ---
 
@@ -13,19 +25,12 @@ cannot do about it, and what each option needs.
 
 ![the 24-city split](../results/p3_matrix/city_split.png)
 
-| | cities | labels | role here |
+| | cities | labels used here | role here |
 |---|---|---|---|
 | train | 14 | yes | transform fitting, training, 5-fold city-grouped CV, threshold choice |
-| test | 10 | **no** | predict-only — the deliverable is one mask per city |
+| test | 10 | **no — never downloaded** | predicted only; not scored, and not used for any decision |
 
-`data/splits.py` is the single source of truth: `TEST_CITIES` is commented
-*"hidden-label test cities (used only in final mode, predict-only)"*, and
-`submit/final_pipeline.py` reaches them through `dcorr13_unlabeled()`, a
-label-free path that takes the raster shape from the imagery because there is no
-mask to take it from.
-
-So no accuracy number for the 10 cities can be produced from what this repo has.
-What exists for them is the deliverable and its sanity check:
+What exists for the 10 cities today is the deliverable and its sanity check:
 
 - 10 uint8 `{0,255}` PNG masks (`results/submission/masks/`)
 - per-city predicted change fraction (`results/submission/predict_m1_L3.json`)
@@ -40,9 +45,10 @@ measurement — it never sees a label.
 The 5-fold CV is **city-grouped**, not a random pixel split: each of the 14
 labelled cities is held out in full exactly once and scored by a model trained
 without it. So every number in the results section is already a *leave-city-out*
-number — the same kind of cross-city generalization test the 10 hidden cities
-would provide, with 14 held-out cities instead of 10, and with matched pairing
-across architectures (same folds, same init, same patch stream).
+number — cross-city generalization measured on 14 held-out cities, with matched
+pairing across architectures (same folds, same init, same patch stream). This is
+the right basis for *choosing* between architectures; it does not replace a
+test-set number for *reporting*.
 
 ![held-out city comparison](../results/p3_matrix/heldout_city_comparison.png)
 
@@ -64,8 +70,10 @@ At L3 (110 params) it reports M1 ahead on macro AP 0.1748 vs 0.1358 (M2) and
 city-to-city spread for a single model is 0.023…0.458, about 20×. The binding
 constraint is which city you test on, not which circuit you use.
 
-## 3. If the test labels become available
+## 3. Scoring the 10 — how
 
+Download the OSCD **test** labels (a separate, small archive from the same
+source as the train labels — masks only, no imagery). Then
 `train/score_hidden_cities.py` produces the same table for the 10 cities:
 
 ```bash
@@ -83,7 +91,7 @@ extent, and writes `results/submission/hidden_city_scores.json` plus
 **τ is frozen.** The default operating point is `tau_final` from
 `results/submission/threshold_m1_L3.json`, chosen out-of-fold before any test
 city was touched; the script has no code path that selects a threshold on test
-pixels.
+pixels. That property is what makes a test number meaningful once we have one.
 
 ### Two granularities, and why it matters
 
@@ -141,7 +149,7 @@ not worth it: depth is already covered by the capacity sweep on the 14 cities.
 ## 5. One discipline point
 
 The submitted model was selected on out-of-fold AP over the 14 labelled cities and
-is frozen. If test-city scores arrive, report them as a final evaluation — do not
-re-pick the architecture, depth or threshold on them. Selecting on the test
+is frozen. When test-city scores are produced, report them as a final evaluation —
+do not re-pick the architecture, depth or threshold on them. Selecting on the test
 cities would turn the only unbiased number in the project into another validation
 number, and the poster's claims are all stated against the CV protocol.

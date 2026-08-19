@@ -1,13 +1,13 @@
 """
-train/score_hidden_cities.py — score the 10 hidden-label OSCD cities, the moment
-their ground truth is available.
+train/score_hidden_cities.py — score the 10 OSCD test cities.
 
-The 10 test cities are predict-only in this repo (`data/splits.py`,
-`TEST_CITIES`): the pipeline writes a mask per city and stops, because no labels
-ship with them. If the organisers release the test labels (or OSCD's separately
-distributed test-label archive is permitted for the challenge), this script turns
-those masks into the same metric table the 14 labelled cities get — per city,
-macro over cities, and pooled over all test pixels.
+They are predict-only in this repo (`data/splits.py`, `TEST_CITIES`): the
+pipeline writes a mask per city and stops. That is a gap in this project, not a
+property of the dataset — OSCD distributes the test labels as a separate archive
+alongside the train labels; they were simply never downloaded here. Point
+`--label_root` at that archive and this script turns the predicted masks into the
+same metric table the 14 labelled cities get — per city, macro over cities, and
+pooled over all test pixels.
 
     python train/score_hidden_cities.py \
         --label_root /path/to/OSCD_test_labels \
