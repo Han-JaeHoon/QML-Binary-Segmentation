@@ -16,6 +16,11 @@ comes *before* modelling:
 All analysis is on the 14 labelled **train** cities. It is fully reproduced by
 [`eda.py`](eda.py); numeric outputs are in [`results/RESULTS.md`](results/RESULTS.md).
 
+> 📌 **Writing the poster? Start with
+> [`docs/QML_POSTER_README.md`](docs/QML_POSTER_README.md)** — models, encoding,
+> parameter counts, training protocol, metrics, full result tables, and the
+> wording guards, all in one place.
+>
 > 📌 **Picking this up cold? Start with [`docs/HANDOFF.md`](docs/HANDOFF.md)** — a
 > self-contained state of the project: every design decision and its rationale,
 > all measured results, the conclusions that were corrected along the way, how to
