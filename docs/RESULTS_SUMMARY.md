@@ -4,6 +4,12 @@ Plain-language summary of the quantum side. Numbers come from one harness
 (`train/run_cell.py`, 45 cells) under 5-fold city-grouped CV; raw values in
 [`../results/p3_matrix/matrix.csv`](../results/p3_matrix/matrix.csv).
 
+**All metrics below are over the 14 labelled cities, each held out in full
+exactly once.** The 10 OSCD test cities have no ground truth, so nothing can be
+scored on them here — they get predicted masks only (§5). Per-city model-vs-model
+tables: [`results_heldout_city_comparison.md`](results_heldout_city_comparison.md).
+What scoring the 10 would require: [`hidden_city_evaluation.md`](hidden_city_evaluation.md).
+
 ---
 
 ## 1. What the model is

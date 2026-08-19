@@ -221,6 +221,14 @@ a held-out validation city exactly once. Never a random pixel split — the EDA
 showed random splits are optimistic (a land-cover feature scored 0.59 under
 random CV and 0.53, i.e. chance, under city-grouped CV).
 
+**Why the 10 test cities are not the validation set.** They have no labels
+(`data/splits.py` — `TEST_CITIES`, predict-only), so they cannot score anything;
+the model comparison has to live on the 14 labelled cities. Because the CV holds
+out whole cities, that comparison is still cross-city: each model is scored on
+cities it never trained on, 14 of them, paired across architectures (identical
+folds, initialisation and patch stream). See
+[`hidden_city_evaluation.md`](hidden_city_evaluation.md).
+
 **Inference.** Stride-1 over the whole held-out city at the natural 2.29 %
 prevalence; reflect-padding supplies context at borders, and outputs are
 accumulated only inside the original raster.
@@ -245,6 +253,17 @@ cannot reach p < 0.05 even in principle.
 ---
 
 ## 7. Results
+
+> **Which cities these numbers are on.** Every metric in this section is over the
+> **14 labelled cities**, each one held out in full exactly once by the
+> city-grouped CV — so they are leave-city-out numbers, not in-sample ones. The
+> other **10 cities carry no ground truth** (`data/splits.py` — `TEST_CITIES`,
+> predict-only), so no accuracy can be computed on them here; their deliverable is
+> a predicted mask per city, plus a threshold-transfer check (§9). Per-city,
+> model-vs-model tables are in
+> [`results_heldout_city_comparison.md`](results_heldout_city_comparison.md);
+> what it would take to score the 10 hidden cities if their labels are released
+> is in [`hidden_city_evaluation.md`](hidden_city_evaluation.md).
 
 ### 7.1 Architecture × depth (mean fold AP, 5 city-grouped folds)
 

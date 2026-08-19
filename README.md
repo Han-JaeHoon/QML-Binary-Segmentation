@@ -223,6 +223,14 @@ raw T1/T2 → robust per-band norm → per-image median-corrected |dB|
   every city yet does **not** compress the cross-city spread. A φ=γ·sᵢ·sⱼ diagnostic
   shows the data-dependent ZZ is < 0.1 rad for ~90 % of neighbour pairs, so the
   M1/M2/M3 comparison (the core claim) is the next and still-untested step.
+- **Which cities the metrics are on**
+  ([`docs/hidden_city_evaluation.md`](docs/hidden_city_evaluation.md)): every
+  reported number is over the **14 labelled** cities under leave-city-out CV; the
+  10 test cities have no ground truth and are predict-only. Per-city,
+  model-vs-model tables are in
+  [`docs/results_heldout_city_comparison.md`](docs/results_heldout_city_comparison.md)
+  (regenerate: `python train/compare_heldout_cities.py`); scoring the 10 hidden
+  cities if their labels are released is `train/score_hidden_cities.py`.
 - **Model ladder** ([`docs/model_ladder.md`](docs/model_ladder.md)): M0 pixel
   baseline → M1/M2/M3 all 38-param (one factor each) → M4 re-uploading, with
   parameter-matched classical twins and the ablation matrix. Main model M3 (9-to-9

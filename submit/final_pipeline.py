@@ -10,7 +10,11 @@ Three stages, runnable separately so nothing here waits on the experiments:
   train      refit the transforms on ALL 14 labelled cities and train the chosen
              architecture on them with the frozen protocol.
   predict    run the final model over the 10 hidden-label cities and write the
-             deliverable: a pixel-aligned uint8 {0,255} PNG per city.
+             deliverable: a pixel-aligned uint8 {0,255} PNG per city, plus the
+             probability map per city (needed later for any threshold-free
+             metric — see train/score_hidden_cities.py). Masks go to
+             results/submission/masks_<kind>_L<depth>/, so running a comparison
+             architecture cannot overwrite the frozen submission in masks/.
 
 The 10 test cities have imagery but no labels, so `dcorr13_unlabeled` mirrors
 preprocess.build_dcorr13 while taking the raster shape from the image instead of
@@ -162,8 +166,13 @@ def cmd_predict(a):
     """Predict the 10 hidden cities and write uint8 {0,255} PNG masks."""
     tag = f"final_{a.kind}_L{a.depth}"
     mdl = np.load(os.path.join(OUT, tag + "_model.npz"))
-    thr = json.load(open(os.path.join(OUT, f"threshold_{a.kind}_L{a.depth}.json")))
-    tau = a.tau if a.tau is not None else thr["tau_final"]
+    if a.tau is not None:
+        # explicit tau: used to carry the frozen M1 operating point over to a
+        # comparison architecture, which has no OOF threshold file of its own.
+        tau = a.tau
+    else:
+        thr = json.load(open(os.path.join(OUT, f"threshold_{a.kind}_L{a.depth}.json")))
+        tau = thr["tau_final"]
     print(f"predicting with FROZEN tau = {tau:.4f} (from OOF; never re-selected here)")
 
     band = pre.BandNormStats(p1=mdl["band_p1"], p99=mdl["band_p99"])
@@ -173,7 +182,10 @@ def cmd_predict(a):
     spec = qmodels.ModelSpec(a.kind, a.depth, "untied", "center_mean")
     forward = qmodels.build_model(spec); params = mdl["params"]
 
-    mdir = os.path.join(OUT, "masks"); os.makedirs(mdir, exist_ok=True)
+    # per-(kind, depth) directory so a comparison run cannot overwrite the frozen
+    # submission in results/submission/masks/ (M1 L3, written before this flag).
+    mdir = a.mask_dir or os.path.join(OUT, f"masks_{a.kind}_L{a.depth}")
+    os.makedirs(mdir, exist_ok=True)
     summary = []
     for c in TEST_CITIES:
         t = time.time()
@@ -190,7 +202,8 @@ def cmd_predict(a):
                         "seconds": time.time() - t})
         print(f"  {c:12} {mask.shape}  change {100*frac:5.2f}%  ({time.time()-t:.0f}s)",
               flush=True)
-    json.dump({"tau": tau, "kind": a.kind, "depth": a.depth, "cities": summary},
+    json.dump({"tau": tau, "kind": a.kind, "depth": a.depth,
+               "mask_dir": os.path.relpath(mdir, ROOT), "cities": summary},
               open(os.path.join(OUT, f"predict_{a.kind}_L{a.depth}.json"), "w"), indent=2)
 
     # deliverable validation
@@ -213,6 +226,10 @@ if __name__ == "__main__":
         if name != "threshold":
             s.add_argument("--data_dir", required=True)
         if name == "predict":
-            s.add_argument("--tau", type=float, default=None)
+            s.add_argument("--tau", type=float, default=None,
+                           help="frozen operating point; default: tau_final from the "
+                                "OOF threshold file for this (kind, depth)")
+            s.add_argument("--mask_dir", default=None,
+                           help="output dir; default results/submission/masks_<kind>_L<depth>")
     a = ap.parse_args()
     {"threshold": cmd_threshold, "train": cmd_train, "predict": cmd_predict}[a.cmd](a)
